@@ -11,6 +11,8 @@ Configured September 10, 2026 under bobofbuilding@bittrees.io.
 - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET stored in Vercel production. GOOGLE_OAUTH_TESTING=true labels the limited pilot. Do not commit or expose the client secret.
 - No paid trial or billing was activated.
 
-Verification still required: sign into AutoNote, connect the test Google account, load upcoming Meet events, select/deselect an event, disconnect and reconnect. Only Google test users can connect until the audience changes. Google verification, including domain ownership and a consent-flow demonstration, is required before claiming unrestricted public availability. Keep the pilot indicator enabled until that review is resolved.
+Live production verification completed September 10, 2026: email sign-in succeeded, the pilot Google account granted the expected read-only scope, the OAuth callback returned successfully, and loading upcoming Meet events succeeded with an empty result for the next 14 days. The connection remains enabled.
+
+Still untested with this account: selecting/deselecting an actual event and disconnecting/reconnecting. No calendar events were created or changed. The CRM handoff reached its sign-in gate; connecting a destination requires signing into the intended existing CRM account. Only Google test users can connect until the audience changes. Google verification, including domain ownership and a consent-flow demonstration, is required before claiming unrestricted public availability. Keep the pilot indicator enabled until that review is resolved.
 
 Reference: https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification
