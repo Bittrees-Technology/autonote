@@ -2,7 +2,7 @@
 
 ## Google Calendar and Google Meet
 
-The first meeting platform is Google Meet with Google Calendar. The current integration reads the primary calendar and lets each signed-in user select individual upcoming Meet events for **manual recording**. It does not join meetings, start Google recordings, send invitations, notify participants, or schedule a bot. Selecting an event is not recording consent from its participants.
+The first meeting platform is Google Meet with Google Calendar. The current integration reads the primary calendar and lets each signed-in user select individual upcoming Meet events for **manual recording**. It does not join meetings, start Google recordings, send invitations, notify participants, or schedule a bot. Selecting an event is not recording consent from its participants. The built-in recorder captures microphone input; remote voices in headphones require a separately captured recording that includes those participants.
 
 The list checks the first 100 events in the next 14 days and explicitly reports truncation. Cancelled, declined, all-day, and non-Meet events are excluded. Only titles, meeting links, and times of selected events are persisted. There is no background calendar sync; reload to check cancellations and changes. Selected-event metadata expires through worker cleanup one day after the event. Calendar access is separate from AutoNote email/SIWE identity.
 

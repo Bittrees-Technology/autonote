@@ -1,1 +1,8 @@
-{"framework":"nextjs","buildCommand":"npm run build","installCommand":"npm ci"}
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "regions": [
+    "fra1"
+  ]
+}

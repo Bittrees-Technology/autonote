@@ -47,7 +47,9 @@ export function GoogleCalendarSettings() {
         <strong>Manual recording only.</strong> Selecting an event saves it to
         your list. It does not join, record, or notify participants. At meeting
         time, open Meet and start a recording in AutoNote after obtaining
-        participant consent.
+        participant consent. Microphone recording does not capture remote voices
+        in headphones. To include everyone, upload a recording made with
+        participant consent that contains all speakers.
       </p>
       {!status ? (
         <p>Checking connection…</p>
