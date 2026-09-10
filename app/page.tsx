@@ -1860,8 +1860,10 @@ export default function App() {
                 <h2>Privacy and data</h2>
                 <p className="muted">
                   Meetings start private. Workspace owners cannot read private
-                  meetings unless they are shared with them. Processing requires
-                  the configured transcription and notes services.
+                  meetings unless they are shared with them.{" "}
+                  {processingMode === "device"
+                    ? "Whisper processes audio in this browser. Only transcripts and notes sync to your account."
+                    : "Processing requires the configured transcription and notes services."}
                 </p>
                 <a href="/privacy">Read the privacy details</a>
                 {user && (
@@ -2427,9 +2429,10 @@ export default function App() {
       {modal === "delete-account" && (
         <Dialog title="Delete your account?" onClose={() => setModal("")}>
           <p>
-            Your sign-in methods and sessions will be removed, and your meetings
-            scheduled for deletion. Transfer ownership of shared workspaces
-            first.
+            {processingMode === "device"
+              ? "Your sign-in methods, sessions, meeting content, and audio stored in this browser will be removed. Audio on other devices must be removed there."
+              : "Your sign-in methods and sessions will be removed, and your meetings scheduled for deletion."}{" "}
+            Transfer ownership of shared workspaces first.
           </p>
           <label>
             Type DELETE to confirm
@@ -2456,7 +2459,9 @@ export default function App() {
                 setPage("meetings");
                 setModal("");
                 setNotice(
-                  "Account deleted. Your recordings are queued for removal.",
+                  processingMode === "device"
+                    ? "Account deleted. Your meeting content and audio in this browser were removed."
+                    : "Account deleted. Your recordings are queued for removal.",
                 );
               })
             }

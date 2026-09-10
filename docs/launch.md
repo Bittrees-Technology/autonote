@@ -41,3 +41,9 @@ For code rollback, return to a tested device-mode release with the forward-compa
 3. Pilot longer consented recordings, Portuguese, additional browsers, recording interruption and device-storage eviction.
 4. Evaluate better local summarization and explicit-action precision before adding generative notes.
 5. Add tab/system-audio capture and unattended capture only after a supported capture design and free-resource feasibility are established.
+
+## Public launch verification — September 10, 2026
+
+The public domain is operational with HTTPS and live device processing. The old `autonote-gamma.vercel.app` address redirects to the custom domain. Preview and production synthetic API checks passed and their generated wallet accounts were deleted. The public browser test completed email sign-in (Resend test recipient reported delivered), actual on-device Whisper inference, quoted highlights, local audio playback, an action-owner edit, and persistence after a full page navigation. The temporary email account and its recording were then deleted through Settings. Authenticated cleanup returned 200; unauthenticated cleanup returned 401. GitHub checks at `ffac931` passed, including 25 TypeScript tests, production build, and the existing Python worker tests.
+
+The verified outgoing sender is `AutoNote <no-reply@crm.bittrees.org>`; it is not an incoming support mailbox. The recommendation for a future monitored support/privacy address is `support@bittrees.org`, once mail receiving or forwarding is configured. A short synthetic check does not establish long-meeting accuracy or device compatibility; the pilot limits above still apply.
