@@ -20,7 +20,7 @@ This pass strengthens the free, on-device beta. Google Calendar still needs its 
 - CRM: 40 automated tests and production build; duplicate/empty publication cases added.
 - CRM existing browser suite: all six record forms, validation, conflicts, expired sessions, failed requests, mobile navigation, authentication linking, workspace operations, scoped invitations and email controls passed.
 - Local cross-product smoke: SIWE in both apps, PKCE authorization/exchange, destination selection, a meeting in a second workspace, reviewed summary and accepted action publication, source links, idempotent retry and disconnect passed. Synthetic accounts were cleaned up.
-- Manual browser review: AutoNote meeting list/detail, upload fields, Settings, callback feedback and CRM sign-in recovery screen. Narrow-screen styles were inspected in code; the embedded browser did not permit a complete resized-device visual pass. Do not interpret this as exhaustive device certification.
+- Manual browser review: AutoNote meeting list/detail, upload fields, Settings, callback feedback and CRM sign-in recovery screen. A 319 px browser view subsequently became available: published meeting navigation and sign-in fields had no horizontal overflow; signed-in workspace fields were inspected at that width. This revealed cramped local-recording labels, which now wrap above their action buttons. Broader phone/tablet coverage remains a beta follow-up.
 
 Run the local cross-product check with both development servers running, AutoNote's local CRM_URL=http://127.0.0.1:3040 and CRM's local AUTONOTE_URL=http://127.0.0.1:3050:
 
@@ -33,3 +33,7 @@ The script deliberately requires local URLs and the adjacent CRM repository. It 
 ## Remaining launch work
 
 Configure Google OAuth using the intended Google Cloud project, then verify consent, reconnect, calendar selection and revocation with a real account. Public support/privacy mail receiving still needs activation according to the separate Bittrees email plan. Recording remains manual; users must supply audio containing all speakers. A broader real-device usability and long-meeting performance pilot remains appropriate for this beta.
+
+## Published verification
+
+AutoNote d933410 and CRM 35b49e4 passed GitHub checks and were published to their custom domains. Production device smoke verified final-origin SIWE, private/idempotent saves, isolation, export, edits and deletion, with synthetic accounts removed. Both integration callback failures returned safe 303 recovery redirects. A final CSS-only follow-up improves narrow local-recording rows.

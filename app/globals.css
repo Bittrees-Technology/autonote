@@ -1536,3 +1536,12 @@ dialog select {
     gap: 4px;
   }
 }
+
+@media (max-width: 620px) {
+  .identity > span {
+    flex: 1 1 160px;
+  }
+  .identity .text-button {
+    min-height: 44px;
+  }
+}
