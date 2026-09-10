@@ -3,7 +3,7 @@ import { Wallet } from "ethers";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-const origin = process.env.AUTONOTE_SMOKE_URL;
+const origin = process.env.AUTONOTE_SMOKE_URL || "";
 if (!origin || !/^https?:\/\//.test(origin))
   throw new Error(
     "Set AUTONOTE_SMOKE_URL to the deployment you intend to test.",
