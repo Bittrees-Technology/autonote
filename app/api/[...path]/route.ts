@@ -31,6 +31,11 @@ async function handle(
   try {
     const path = (await params).path;
     const method = req.method;
+    if (!process.env.DATABASE_URL && path[0] !== "health")
+      throw new HttpError(
+        503,
+        "AutoNote is in preview. Account and recording services are awaiting production setup. You can explore the fictional demo.",
+      );
     const url = new URL(req.url);
     if (method !== "GET") checkOrigin(req);
     let data: any = {};

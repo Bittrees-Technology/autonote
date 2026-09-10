@@ -1,5 +1,7 @@
 # AutoNote by Bittrees
 
+**[Explore the fictional demo](https://autonote-gamma.vercel.app)** · [GitHub](https://github.com/Bittrees-Technology/autonote)
+
 An MIT-licensed meeting workspace: record or upload, transcribe with Whisper, review notes and actions, and share deliberately.
 
 **Release status:** implementation beta. The core pipeline runs locally; public deployment requires separately configured PostgreSQL, private object storage, email delivery, a worker, and a notes model. A Vercel deployment without these services is a clearly labeled fictional demo, not an operational recording service.

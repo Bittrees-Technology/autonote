@@ -1,0 +1,11 @@
+.env*
+.git
+node_modules
+.next
+workers
+compose.yaml
+tests
+scripts
+docs
+*.wav
+*.mp3
