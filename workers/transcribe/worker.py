@@ -187,6 +187,7 @@ def cleanup():
             if m['object_key']:
                 store.delete_object(Bucket=os.environ['S3_BUCKET'],Key=m['object_key'])
             if m['deleted_at']:
+                conn.execute('DELETE FROM crm_previews WHERE meeting_id=%s',(m['id'],))
                 conn.execute('DELETE FROM revisions WHERE meeting_id=%s',(m['id'],))
                 conn.execute('DELETE FROM meeting_grants WHERE meeting_id=%s',(m['id'],))
                 conn.execute('DELETE FROM jobs WHERE meeting_id=%s',(m['id'],))
@@ -196,6 +197,10 @@ def cleanup():
     with db() as conn:
         conn.execute("DELETE FROM challenges WHERE expires_at<now()-interval '1 day'")
         conn.execute('DELETE FROM sessions WHERE expires_at<now()')
+        conn.execute('DELETE FROM google_pending WHERE expires_at<now()')
+        conn.execute("DELETE FROM google_selections WHERE ends_at<now()-interval '1 day'")
+        conn.execute('DELETE FROM crm_pending WHERE expires_at<now()')
+        conn.execute('DELETE FROM crm_previews WHERE expires_at<now()')
         conn.execute("DELETE FROM rate_limits WHERE resets_at<now()-interval '1 day'")
 
 

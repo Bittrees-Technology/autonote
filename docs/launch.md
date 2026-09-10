@@ -10,13 +10,15 @@ The code is an implementation beta, not a completed public-service launch. Do no
 - Notes provider: choose a production model after checking quality and data handling. Set the endpoint, model, and credentials on the worker only. Test long meetings and invalid provider responses. A provider outage leaves the transcript accessible and exposes a retry path.
 - Email: verify the Resend sender and deliver real sign-in codes. Turn off console delivery. Use a new production AUTH_SECRET.
 
-No paid infrastructure was purchased by the build task. Select the operating region and a monthly budget before provisioning paid resources.
+The approved budget is **free resources only**. Separate Neon free-plan databases in Frankfurt are provisioned for preview and production, and their schemas have been migrated. A private Frankfurt Vercel Blob store has been created but is empty and not connected to application uploads; the working application storage adapter is still S3-compatible. Do not enable billable storage usage or a paid worker/model service.
+
+Vercel deployments default to demo mode even when a database is present. Set `AUTONOTE_MODE=live` only after all operational gates pass. Local/self-hosted environments retain their existing behavior. No recording host or production notes endpoint is connected yet. Existing local Whisper, MinIO, and Ollama resources remain available for development without purchasing cloud compute.
 
 ## 2. Complete the pilot gates
 
 - Browser QA on supported Chrome/Safari desktop and mobile: email, wallet cancellation, identity linking and recovery, keyboard/focus, 200% zoom, upload retry, recording interruption, IndexedDB limits, pause/stop, sharing revocation, and audio seek.
 - Diarization: install the optional dependency and model only if automated speaker separation is needed at launch. Confirm model access/license and telemetry settings; evaluate overlapping speakers. Otherwise keep “Unlabeled speaker” and manual naming explicit.
-- Review 20–30 consented or synthetic recordings by language and noise condition. Score transcript quality and explicit-action precision. Measure the proposed 60-minute/10-minute latency target under realistic load; it has not been established by a short smoke test.
+- The first 20 synthetic cases are evaluated in [the pilot report](evaluations/synthetic-pilot.md). The small local notes model failed action extraction quality; improve it and review 20–30 consented recordings by language and noise condition. Score transcript quality and explicit-action precision. Measure the proposed 60-minute/10-minute latency target under realistic load; it has not been established by a short smoke test.
 - Verify retained audio expires, deleted meetings cannot be restored by late jobs, queued uploads cannot exceed quotas, and orphaned uploads are removed.
 - Confirm each provider and region, supply the operator’s privacy contact and backup-expiry policy, and update the privacy page before public registration.
 
@@ -38,4 +40,6 @@ To roll back code, stop new processing claims, return Vercel and the worker to t
 
 ## 5. Next product milestone
 
-Implement a scoped Bittrees CRM connection: choose a destination workspace/record, preview the summary and tasks, publish approved items idempotently, and retain synchronization mappings. Then investigate the meeting platform actually used by the pilot team for scheduled capture. Shared Bittrees SSO remains a separate identity-service decision.
+CRM connection and reviewed, idempotent publication are implemented. Google Calendar/Meet is the confirmed first platform: read-only primary-calendar access and per-event manual-recording selection are implemented, pending Google OAuth credentials and a live browser test. See [integration setup](integrations.md).
+
+The remaining capture milestone is a suitable free worker/storage deployment and explicitly consented unattended Meet capture. Calendar selection alone does not record a meeting. Shared Bittrees SSO remains a separate identity-service decision.

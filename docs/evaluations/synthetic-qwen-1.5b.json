@@ -1,0 +1,1667 @@
+[
+  {
+    "id": "en-1-clean",
+    "language": "en",
+    "condition": "clean",
+    "reference": "Today we reviewed the website. Maya will prepare the launch checklist. We agreed to keep the first release free. The budget question remains open.",
+    "transcript": "Today we reviewed the website. Maya will prepare the launch checklist. We agreed to keep the first release free. The budget question remains open.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 1.92,
+        "speaker": "Unlabeled speaker",
+        "text": "Today we reviewed the website."
+      },
+      {
+        "id": "s2",
+        "start": 1.92,
+        "end": 4.32,
+        "speaker": "Unlabeled speaker",
+        "text": "Maya will prepare the launch checklist."
+      },
+      {
+        "id": "s3",
+        "start": 4.32,
+        "end": 6.88,
+        "speaker": "Unlabeled speaker",
+        "text": "We agreed to keep the first release free."
+      },
+      {
+        "id": "s4",
+        "start": 6.88,
+        "end": 8.76,
+        "speaker": "Unlabeled speaker",
+        "text": "The budget question remains open."
+      }
+    ],
+    "seconds": 8.756375,
+    "transcriptionSeconds": 1.7480954590137117,
+    "wordErrors": 0,
+    "referenceWords": 24,
+    "notes": {
+      "summary": "Website review and launch plan discussion",
+      "topics": [
+        {
+          "id": "535edc61-076c-4808-9f70-33e9e37b3919",
+          "text": "website review",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "a679977f-2097-4e69-bd50-e8257762c2e6",
+          "text": "launch checklist preparation",
+          "evidence": [
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "994de303-bfbf-4f72-b4e6-ccb40dcaee54",
+          "text": "budget question discussion",
+          "evidence": [
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [],
+      "actions": [],
+      "questions": [
+        {
+          "id": "ffc6477e-e448-44cc-9cb9-85f268f54ce4",
+          "text": "What is the current status of the website review?",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "43d42450-0ec1-41c7-ac85-164f2e5bfc37",
+          "text": "When should the launch checklist be prepared, and who will do it?",
+          "evidence": [
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "6cd36a43-abfb-47d4-bc5f-c445705d7753",
+          "text": "What is the budget for the first release, and how can we address any remaining questions?",
+          "evidence": [
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "recommendations": []
+    },
+    "notesSeconds": 8.116175753995776,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-1-noise",
+    "language": "en",
+    "condition": "noise",
+    "reference": "Today we reviewed the website. Maya will prepare the launch checklist. We agreed to keep the first release free. The budget question remains open.",
+    "transcript": "Today we reviewed the website. Maya will prepare the launch checklist. We agreed to keep the first release free. The budget question remains open.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 1.88,
+        "speaker": "Unlabeled speaker",
+        "text": "Today we reviewed the website."
+      },
+      {
+        "id": "s2",
+        "start": 1.88,
+        "end": 4.32,
+        "speaker": "Unlabeled speaker",
+        "text": "Maya will prepare the launch checklist."
+      },
+      {
+        "id": "s3",
+        "start": 4.32,
+        "end": 6.88,
+        "speaker": "Unlabeled speaker",
+        "text": "We agreed to keep the first release free."
+      },
+      {
+        "id": "s4",
+        "start": 6.88,
+        "end": 8.72,
+        "speaker": "Unlabeled speaker",
+        "text": "The budget question remains open."
+      }
+    ],
+    "seconds": 8.756375,
+    "transcriptionSeconds": 2.0818301669787616,
+    "wordErrors": 0,
+    "referenceWords": 24,
+    "notes": {
+      "summary": "Website review and launch plan discussion",
+      "topics": [
+        {
+          "id": "fad09649-4cc0-43a2-8839-6fc2cf3e39f1",
+          "text": "website review",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "c8e47a5d-c1a1-4087-b4f4-e382ce8daa1f",
+          "text": "launch checklist preparation",
+          "evidence": [
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "72474118-1220-4f21-9f3e-1f7fe639cce4",
+          "text": "budget question discussion",
+          "evidence": [
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [],
+      "actions": [],
+      "questions": [
+        {
+          "id": "a5279780-231b-47b5-a8ee-1db232c46481",
+          "text": "What is the current status of the website review?",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "4e10e37f-d474-4362-93ea-0c56eac1aebc",
+          "text": "When should Maya prepare the launch checklist?",
+          "evidence": [
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "d64e247b-395a-4c57-b4c0-d456e8b2a534",
+          "text": "What is the budget question about, and when will it be decided?",
+          "evidence": [
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "recommendations": []
+    },
+    "notesSeconds": 5.1481666269828565,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-2-clean",
+    "language": "en",
+    "condition": "clean",
+    "reference": "The upload test passed. James will document the remaining browser issues. We have not decided when to launch. Nobody has agreed to buy a new server.",
+    "transcript": "The upload test passed. James will document the remaining browser issues. We have not decided when to launch. Nobody has agreed to buy a new server.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 1.7,
+        "speaker": "Unlabeled speaker",
+        "text": "The upload test passed."
+      },
+      {
+        "id": "s2",
+        "start": 1.7,
+        "end": 4.66,
+        "speaker": "Unlabeled speaker",
+        "text": "James will document the remaining browser issues."
+      },
+      {
+        "id": "s3",
+        "start": 4.66,
+        "end": 7.06,
+        "speaker": "Unlabeled speaker",
+        "text": "We have not decided when to launch."
+      },
+      {
+        "id": "s4",
+        "start": 7.06,
+        "end": 9.5,
+        "speaker": "Unlabeled speaker",
+        "text": "Nobody has agreed to buy a new server."
+      }
+    ],
+    "seconds": 9.311625,
+    "transcriptionSeconds": 1.7431517509976402,
+    "wordErrors": 0,
+    "referenceWords": 26,
+    "notes": {
+      "summary": "The upload test passed, and the team is undecided on launch date and has not decided to purchase a new server.",
+      "topics": [],
+      "decisions": [],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 1.6848806680063717,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-2-noise",
+    "language": "en",
+    "condition": "noise",
+    "reference": "The upload test passed. James will document the remaining browser issues. We have not decided when to launch. Nobody has agreed to buy a new server.",
+    "transcript": "The upload test passed. James will document the remaining browser issues. We have not decided when to launch. Nobody has agreed to buy a new server.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 1.74,
+        "speaker": "Unlabeled speaker",
+        "text": "The upload test passed."
+      },
+      {
+        "id": "s2",
+        "start": 1.74,
+        "end": 4.66,
+        "speaker": "Unlabeled speaker",
+        "text": "James will document the remaining browser issues."
+      },
+      {
+        "id": "s3",
+        "start": 4.66,
+        "end": 7.06,
+        "speaker": "Unlabeled speaker",
+        "text": "We have not decided when to launch."
+      },
+      {
+        "id": "s4",
+        "start": 7.06,
+        "end": 9.5,
+        "speaker": "Unlabeled speaker",
+        "text": "Nobody has agreed to buy a new server."
+      }
+    ],
+    "seconds": 9.311625,
+    "transcriptionSeconds": 1.7333979170070961,
+    "wordErrors": 0,
+    "referenceWords": 26,
+    "notes": {
+      "summary": "The upload test passed, and the team is unsure about when to launch and hasn't decided on buying a new server.",
+      "topics": [],
+      "decisions": [],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 1.5811562919989228,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-3-clean",
+    "language": "en",
+    "condition": "clean",
+    "reference": "We reviewed the customer feedback. Sofia will summarize the comments. We decided to postpone the mobile redesign. The team still needs to choose a support contact.",
+    "transcript": "We reviewed the customer feedback. Sophia will summarize the comments. We decided to postpone the mobile redesign. The team still needs to choose a support contact.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 2.12,
+        "speaker": "Unlabeled speaker",
+        "text": "We reviewed the customer feedback."
+      },
+      {
+        "id": "s2",
+        "start": 2.12,
+        "end": 4.4,
+        "speaker": "Unlabeled speaker",
+        "text": "Sophia will summarize the comments."
+      },
+      {
+        "id": "s3",
+        "start": 4.4,
+        "end": 7.32,
+        "speaker": "Unlabeled speaker",
+        "text": "We decided to postpone the mobile redesign."
+      },
+      {
+        "id": "s4",
+        "start": 7.32,
+        "end": 10.36,
+        "speaker": "Unlabeled speaker",
+        "text": "The team still needs to choose a support contact."
+      }
+    ],
+    "seconds": 10.1494375,
+    "transcriptionSeconds": 1.7034131669788621,
+    "wordErrors": 1,
+    "referenceWords": 26,
+    "notes": {
+      "summary": "Customer feedback was reviewed, and the mobile redesign is postponed.",
+      "topics": [],
+      "decisions": [
+        {
+          "id": "87e7dd2f-d99c-4542-a9d8-f2ef05acd2bf",
+          "text": "Postpone mobile redesign",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 1.8563832929939963,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-3-noise",
+    "language": "en",
+    "condition": "noise",
+    "reference": "We reviewed the customer feedback. Sofia will summarize the comments. We decided to postpone the mobile redesign. The team still needs to choose a support contact.",
+    "transcript": "We reviewed the customer feedback. Sophia will summarize the comments. We decided to postpone the mobile redesign. The team still needs to choose a support contact.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 2.12,
+        "speaker": "Unlabeled speaker",
+        "text": "We reviewed the customer feedback."
+      },
+      {
+        "id": "s2",
+        "start": 2.12,
+        "end": 4.4,
+        "speaker": "Unlabeled speaker",
+        "text": "Sophia will summarize the comments."
+      },
+      {
+        "id": "s3",
+        "start": 4.4,
+        "end": 7.32,
+        "speaker": "Unlabeled speaker",
+        "text": "We decided to postpone the mobile redesign."
+      },
+      {
+        "id": "s4",
+        "start": 7.32,
+        "end": 10.32,
+        "speaker": "Unlabeled speaker",
+        "text": "The team still needs to choose a support contact."
+      }
+    ],
+    "seconds": 10.1494375,
+    "transcriptionSeconds": 1.8803193339845166,
+    "wordErrors": 1,
+    "referenceWords": 26,
+    "notes": {
+      "summary": "Customer feedback was reviewed, and the mobile redesign is postponed.",
+      "topics": [],
+      "decisions": [
+        {
+          "id": "0a18270f-1fc9-4023-b944-9a8f53266a0d",
+          "text": "Postpone mobile redesign",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 1.7380455840029754,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-4-clean",
+    "language": "en",
+    "condition": "clean",
+    "reference": "The report is incomplete. Daniel will verify the totals. We agreed to remove the duplicate rows. There is no deadline for the follow up.",
+    "transcript": "The report is incomplete. Daniel will verify the totals. We agreed to remove the duplicate rows. There is no deadline for the follow-up.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 5.52,
+        "speaker": "Unlabeled speaker",
+        "text": "The report is incomplete. Daniel will verify the totals. We agreed to remove the duplicate"
+      },
+      {
+        "id": "s2",
+        "start": 5.52,
+        "end": 8.2,
+        "speaker": "Unlabeled speaker",
+        "text": "rows. There is no deadline for the follow-up."
+      }
+    ],
+    "seconds": 8.2755,
+    "transcriptionSeconds": 1.728146041976288,
+    "wordErrors": 0,
+    "referenceWords": 24,
+    "notes": {
+      "summary": "The report is incomplete and duplicate rows need to be removed.",
+      "topics": [
+        {
+          "id": "83892850-8e16-4487-8fa0-d3866f0e8dac",
+          "text": "Report Incompleteness",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "56123b37-c6b3-4095-8a44-4737526ed2c2",
+          "text": "Duplicate Rows Removal",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 2.8683592089801095,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-4-noise",
+    "language": "en",
+    "condition": "noise",
+    "reference": "The report is incomplete. Daniel will verify the totals. We agreed to remove the duplicate rows. There is no deadline for the follow up.",
+    "transcript": "The report is incomplete. Daniel will verify the totals. We agreed to remove the duplicate rows. There is no deadline for the follow up.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 8.2,
+        "speaker": "Unlabeled speaker",
+        "text": "The report is incomplete. Daniel will verify the totals. We agreed to remove the duplicate rows. There is no deadline for the follow up."
+      }
+    ],
+    "seconds": 8.2755,
+    "transcriptionSeconds": 1.6411171249928884,
+    "wordErrors": 0,
+    "referenceWords": 24,
+    "notes": {
+      "summary": "[Meeting Summary] The meeting was brief and focused on verifying the completeness of a report, removing duplicate rows, and agreeing on a follow-up action.",
+      "topics": [
+        {
+          "id": "c29836db-d63f-4e00-b8ee-7646446afe4e",
+          "text": "Verify Report Completeness",
+          "evidence": [
+            "s1"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [],
+      "actions": [
+        {
+          "id": "21ae8d41-c9ef-460a-a19e-1dd10086342d",
+          "text": "Daniel will verify the totals in the report.",
+          "evidence": [
+            "s1"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "questions": [
+        {
+          "id": "6a280edf-1d82-4ff6-ad95-2d41253384fb",
+          "text": "What is the deadline for the follow-up action?",
+          "evidence": [
+            "s1"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "recommendations": []
+    },
+    "notesSeconds": 3.2227902919985354,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-5-clean",
+    "language": "en",
+    "condition": "clean",
+    "reference": "The calendar connection needs testing. Emma will check the meeting links. We decided to request read only permission. Automatic recording is not available.",
+    "transcript": "The calendar connection needs testing. Emma will check the meeting links. We decided to request read only permission. Automatic recording is not available.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 2.32,
+        "speaker": "Unlabeled speaker",
+        "text": "The calendar connection needs testing."
+      },
+      {
+        "id": "s2",
+        "start": 2.32,
+        "end": 4.4,
+        "speaker": "Unlabeled speaker",
+        "text": "Emma will check the meeting links."
+      },
+      {
+        "id": "s3",
+        "start": 4.4,
+        "end": 7.04,
+        "speaker": "Unlabeled speaker",
+        "text": "We decided to request read only permission."
+      },
+      {
+        "id": "s4",
+        "start": 7.04,
+        "end": 9.4,
+        "speaker": "Unlabeled speaker",
+        "text": "Automatic recording is not available."
+      }
+    ],
+    "seconds": 9.1718125,
+    "transcriptionSeconds": 1.6677919179783203,
+    "wordErrors": 0,
+    "referenceWords": 23,
+    "notes": {
+      "summary": "The team discussed testing the calendar connection and requesting read-only permission.",
+      "topics": [],
+      "decisions": [
+        {
+          "id": "4a9e9f70-85e5-455a-b8ac-d511a7409793",
+          "text": "Request read only permission",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 2.190495335031301,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "en-5-noise",
+    "language": "en",
+    "condition": "noise",
+    "reference": "The calendar connection needs testing. Emma will check the meeting links. We decided to request read only permission. Automatic recording is not available.",
+    "transcript": "The calendar connection needs testing. Emma will check the meeting links. We decided to request read only permission. Automatic recording is not available.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 2.32,
+        "speaker": "Unlabeled speaker",
+        "text": "The calendar connection needs testing."
+      },
+      {
+        "id": "s2",
+        "start": 2.32,
+        "end": 4.38,
+        "speaker": "Unlabeled speaker",
+        "text": "Emma will check the meeting links."
+      },
+      {
+        "id": "s3",
+        "start": 4.38,
+        "end": 7.0,
+        "speaker": "Unlabeled speaker",
+        "text": "We decided to request read only permission."
+      },
+      {
+        "id": "s4",
+        "start": 7.0,
+        "end": 9.38,
+        "speaker": "Unlabeled speaker",
+        "text": "Automatic recording is not available."
+      }
+    ],
+    "seconds": 9.1718125,
+    "transcriptionSeconds": 1.5799197090091184,
+    "wordErrors": 0,
+    "referenceWords": 23,
+    "notes": {
+      "summary": "The team discussed testing the calendar connection and requesting read-only permission.",
+      "topics": [],
+      "decisions": [
+        {
+          "id": "fe8d3fa2-96c0-4420-848a-187082f0f651",
+          "text": "Request read only permission",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 1.9933649180456996,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-1-clean",
+    "language": "pt",
+    "condition": "clean",
+    "reference": "Hoje analisámos o site. A Maria vai preparar a lista de lançamento. Decidimos manter a primeira versão gratuita. A questão do orçamento continua em aberto.",
+    "transcript": "Hoje analisámos o site, a Maria vai preparar a lista do lançamento, decidimos manter a primeira versão gratuita, a questão do orçamento continua em aberto.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 5.88,
+        "speaker": "Unlabeled speaker",
+        "text": "Hoje analisámos o site, a Maria vai preparar a lista do lançamento, decidimos manter a"
+      },
+      {
+        "id": "s2",
+        "start": 5.88,
+        "end": 10.44,
+        "speaker": "Unlabeled speaker",
+        "text": "primeira versão gratuita, a questão do orçamento continua em aberto."
+      }
+    ],
+    "seconds": 10.482,
+    "transcriptionSeconds": 1.829292668029666,
+    "wordErrors": 1,
+    "referenceWords": 25,
+    "notes": {
+      "summary": "The team discussed the site and decided to keep the first free version.",
+      "topics": [
+        {
+          "id": "0cef8e50-3b37-443e-987d-d6710fa6a6e6",
+          "text": "Site",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "194f0c91-d01b-4936-b2c3-6c9bdd6fc3fb",
+          "text": "Free Version",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "9c697a7d-071b-4633-9eec-af37de992eea",
+          "text": "Keep the first free version of the site.",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 3.7894678759621456,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-1-noise",
+    "language": "pt",
+    "condition": "noise",
+    "reference": "Hoje analisámos o site. A Maria vai preparar a lista de lançamento. Decidimos manter a primeira versão gratuita. A questão do orçamento continua em aberto.",
+    "transcript": "Hoje analisámos o site, a Maria vai preparar a lista do lançamento, decidimos manter a primeira versão gratuita, a questão do orçamento continua em aberto.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 5.86,
+        "speaker": "Unlabeled speaker",
+        "text": "Hoje analisámos o site, a Maria vai preparar a lista do lançamento, decidimos manter a"
+      },
+      {
+        "id": "s2",
+        "start": 5.86,
+        "end": 10.44,
+        "speaker": "Unlabeled speaker",
+        "text": "primeira versão gratuita, a questão do orçamento continua em aberto."
+      }
+    ],
+    "seconds": 10.482,
+    "transcriptionSeconds": 1.9780681259580888,
+    "wordErrors": 1,
+    "referenceWords": 25,
+    "notes": {
+      "summary": "The team discussed the site and decided to keep the first free version.",
+      "topics": [
+        {
+          "id": "5b660d2c-1555-4d00-b4af-cef9c79654c4",
+          "text": "Site",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "3be4ddba-f6a2-46a6-9f21-32b5fcf70130",
+          "text": "Free Version",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "202eda23-01cb-4884-b433-0b85ba421628",
+          "text": "Keep the first free version of the site.",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 3.315067210001871,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-2-clean",
+    "language": "pt",
+    "condition": "clean",
+    "reference": "O teste de envio funcionou. O João vai documentar os problemas do navegador. Ainda não decidimos quando lançar. Ninguém concordou em comprar um novo servidor.",
+    "transcript": "O teste de envio funcionou. O João vai documentar os problemas do navegador. Ainda não decidimos quando lançar. Ninguém concordou em comprar um novo servidor.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 1.96,
+        "speaker": "Unlabeled speaker",
+        "text": "O teste de envio funcionou."
+      },
+      {
+        "id": "s2",
+        "start": 1.96,
+        "end": 5.12,
+        "speaker": "Unlabeled speaker",
+        "text": "O João vai documentar os problemas do navegador."
+      },
+      {
+        "id": "s3",
+        "start": 5.12,
+        "end": 7.48,
+        "speaker": "Unlabeled speaker",
+        "text": "Ainda não decidimos quando lançar."
+      },
+      {
+        "id": "s4",
+        "start": 7.48,
+        "end": 10.32,
+        "speaker": "Unlabeled speaker",
+        "text": "Ninguém concordou em comprar um novo servidor."
+      }
+    ],
+    "seconds": 10.365625,
+    "transcriptionSeconds": 1.9215658340253867,
+    "wordErrors": 0,
+    "referenceWords": 25,
+    "notes": {
+      "summary": "The team is discussing the testing of a new feature and deciding on when to launch it.",
+      "topics": [
+        {
+          "id": "9e770b83-27b8-4820-aa23-ee59b77cc742",
+          "text": "Testing",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "0257212a-ec57-4036-a12e-194bc55d1790",
+          "text": "Launch Date",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "b3fbf0d4-b41a-4ed2-aed4-5a8198ecfd1a",
+          "text": "Decide on a launch date for the new feature.",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "a3f69dc4-7363-45b7-bdcb-a68029be9d93",
+          "text": "Document any issues with the current browser.",
+          "evidence": [
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [
+        {
+          "id": "5368ee16-952b-4a4a-8a52-27708ad572c9",
+          "text": "Start planning for a new server purchase.",
+          "evidence": [
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "de2f723f-faa0-4618-95f1-7858384ab45c",
+          "text": "Document the testing results and issues with the current browser.",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "questions": [
+        {
+          "id": "6f7c760a-9732-43eb-a3f5-71dac78a4dba",
+          "text": "Who will document the problems with the new feature?",
+          "evidence": [
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "b4768b20-673d-4e81-88d8-724ecaf9b2ca",
+          "text": "When should we decide on a launch date for the new feature?",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "4377cecf-3b86-4689-8e75-164d440ae383",
+          "text": "Consider using a beta version of the browser to test the new feature.",
+          "evidence": [
+            "s2",
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "9fd9f211-b34f-43f3-9749-1c9cc5ba02f4",
+          "text": "Ensure that all team members are aware of the testing results and issues with the current browser.",
+          "evidence": [
+            "s1",
+            "s2",
+            "s3",
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ]
+    },
+    "notesSeconds": 8.896872961020563,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-2-noise",
+    "language": "pt",
+    "condition": "noise",
+    "reference": "O teste de envio funcionou. O João vai documentar os problemas do navegador. Ainda não decidimos quando lançar. Ninguém concordou em comprar um novo servidor.",
+    "transcript": "O teste de envio funcionou, o João vai documentar os problemas do navegador, ainda não decidimos quando lançar, ninguém concordou em comprar um novo servidor.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 6.32,
+        "speaker": "Unlabeled speaker",
+        "text": "O teste de envio funcionou, o João vai documentar os problemas do navegador, ainda não decidimos"
+      },
+      {
+        "id": "s2",
+        "start": 6.32,
+        "end": 10.32,
+        "speaker": "Unlabeled speaker",
+        "text": "quando lançar, ninguém concordou em comprar um novo servidor."
+      }
+    ],
+    "seconds": 10.365625,
+    "transcriptionSeconds": 1.6220892510027625,
+    "wordErrors": 0,
+    "referenceWords": 25,
+    "notes": {
+      "summary": "[Meeting Summary]: The team discussed the successful test of the delivery tool and decided to document any issues with the browser. However, there was no agreement on when to purchase a new server.",
+      "topics": [
+        {
+          "id": "0a3be701-82bb-4b2b-b30b-1e2d935ac12d",
+          "text": "Documenting Browser Issues",
+          "evidence": [
+            "s1"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [],
+      "actions": [],
+      "questions": [
+        {
+          "id": "f190b8af-75c8-4367-ad77-798bf85435b9",
+          "text": "When should we buy a new server?",
+          "evidence": [
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "recommendations": []
+    },
+    "notesSeconds": 2.524838584999088,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-3-clean",
+    "language": "pt",
+    "condition": "clean",
+    "reference": "Analisámos os comentários dos clientes. A Sofia vai resumir os comentários. Decidimos adiar as alterações da aplicação móvel. A equipa precisa de escolher um contacto de apoio.",
+    "transcript": "Analisamos os comentários dos clientes. A Sofia vai resumir os comentários. Decidimos adiar as alterações da aplicação móvel. A equipe precisa de escolher um contacto de apoio.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 2.78,
+        "speaker": "Unlabeled speaker",
+        "text": "Analisamos os comentários dos clientes."
+      },
+      {
+        "id": "s2",
+        "start": 2.78,
+        "end": 5.46,
+        "speaker": "Unlabeled speaker",
+        "text": "A Sofia vai resumir os comentários."
+      },
+      {
+        "id": "s3",
+        "start": 5.46,
+        "end": 9.06,
+        "speaker": "Unlabeled speaker",
+        "text": "Decidimos adiar as alterações da aplicação móvel."
+      },
+      {
+        "id": "s4",
+        "start": 9.06,
+        "end": 12.06,
+        "speaker": "Unlabeled speaker",
+        "text": "A equipe precisa de escolher um contacto de apoio."
+      }
+    ],
+    "seconds": 12.0720625,
+    "transcriptionSeconds": 1.4090409589698538,
+    "wordErrors": 2,
+    "referenceWords": 27,
+    "notes": {
+      "summary": "The team discussed customer comments and decided to postpone changes in the mobile application.",
+      "topics": [
+        {
+          "id": "6253b6d7-4cff-4b19-b325-69f3cb6f634a",
+          "text": "Discussing Customer Comments",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "95ee4560-01e6-4027-97b6-c86a538c4144",
+          "text": "Deciding on Mobile Application Changes",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "2a5208cd-6f79-47ef-9ef6-07d2b6a230cb",
+          "text": "Adhere to the decision of postponing changes in the mobile application.",
+          "evidence": [
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 3.4479302930412814,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-3-noise",
+    "language": "pt",
+    "condition": "noise",
+    "reference": "Analisámos os comentários dos clientes. A Sofia vai resumir os comentários. Decidimos adiar as alterações da aplicação móvel. A equipa precisa de escolher um contacto de apoio.",
+    "transcript": "Analisamos os comentários dos clientes, a Sofia vai resumir os comentários. Decidimos aviar as alterações da aplicação mobile. A equipe precisa de escolher um contacto de apoio.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 5.42,
+        "speaker": "Unlabeled speaker",
+        "text": "Analisamos os comentários dos clientes, a Sofia vai resumir os comentários."
+      },
+      {
+        "id": "s2",
+        "start": 5.42,
+        "end": 9.04,
+        "speaker": "Unlabeled speaker",
+        "text": "Decidimos aviar as alterações da aplicação mobile."
+      },
+      {
+        "id": "s3",
+        "start": 9.04,
+        "end": 12.04,
+        "speaker": "Unlabeled speaker",
+        "text": "A equipe precisa de escolher um contacto de apoio."
+      }
+    ],
+    "seconds": 12.0720625,
+    "transcriptionSeconds": 1.355172167008277,
+    "wordErrors": 4,
+    "referenceWords": 27,
+    "notes": {
+      "summary": "The team discussed customer comments and decided to update the mobile application.",
+      "topics": [
+        {
+          "id": "ff5b1dd8-c0a3-4cca-ab87-8e61a18a3442",
+          "text": "Customer Comments",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "d92c5aab-2972-446b-aaa2-61ece861942f",
+          "text": "Mobile Application Update",
+          "evidence": [
+            "s2",
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "e7f14ca3-d697-4ba5-b005-cea0beab9732",
+          "text": "Update the mobile application.",
+          "evidence": [
+            "s2",
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 3.2196437509846874,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-4-clean",
+    "language": "pt",
+    "condition": "clean",
+    "reference": "O relatório está incompleto. O Daniel vai verificar os totais. Decidimos remover as linhas duplicadas. Não existe prazo para o acompanhamento.",
+    "transcript": "O relatório está incompleto, o Daniel vai verificar os totais, decidimos remover as linhas duplicadas, não existe prazo para o acompanhamento.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 6.16,
+        "speaker": "Unlabeled speaker",
+        "text": "O relatório está incompleto, o Daniel vai verificar os totais, decidimos remover as"
+      },
+      {
+        "id": "s2",
+        "start": 6.16,
+        "end": 10.4,
+        "speaker": "Unlabeled speaker",
+        "text": "linhas duplicadas, não existe prazo para o acompanhamento."
+      }
+    ],
+    "seconds": 10.4353125,
+    "transcriptionSeconds": 1.1327164589893073,
+    "wordErrors": 0,
+    "referenceWords": 21,
+    "notes": {
+      "summary": "[Meeting Summary] The meeting discussed the incomplete report and decided to remove duplicated lines.",
+      "topics": [
+        {
+          "id": "4da7a100-6d61-4d85-b88b-2503576cbda8",
+          "text": "Incomplete Report",
+          "evidence": [
+            "s1"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "db40c577-a618-4fda-a7de-e5db642b5e34",
+          "text": "Remove duplicated lines from the report",
+          "evidence": [
+            "s1"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 2.038270501012448,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-4-noise",
+    "language": "pt",
+    "condition": "noise",
+    "reference": "O relatório está incompleto. O Daniel vai verificar os totais. Decidimos remover as linhas duplicadas. Não existe prazo para o acompanhamento.",
+    "transcript": "O relatório está incompleto. O Daniel vai verificar os tutais. Decidimos remover as linhas duplicadas. Não existe prazo para o acompanhamento.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 4.8,
+        "speaker": "Unlabeled speaker",
+        "text": "O relatório está incompleto. O Daniel vai verificar os tutais."
+      },
+      {
+        "id": "s2",
+        "start": 4.8,
+        "end": 10.5,
+        "speaker": "Unlabeled speaker",
+        "text": "Decidimos remover as linhas duplicadas. Não existe prazo para o acompanhamento."
+      }
+    ],
+    "seconds": 10.4353125,
+    "transcriptionSeconds": 1.2423330419696867,
+    "wordErrors": 1,
+    "referenceWords": 21,
+    "notes": {
+      "summary": "The meeting discussed the incomplete report and decided to remove duplicate lines.",
+      "topics": [],
+      "decisions": [
+        {
+          "id": "e8579d86-eb68-4584-991d-49f4f350e398",
+          "text": "Remove duplicate lines from the report",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [],
+      "questions": [],
+      "recommendations": []
+    },
+    "notesSeconds": 1.6148375420016237,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-5-clean",
+    "language": "pt",
+    "condition": "clean",
+    "reference": "A ligação ao calendário precisa de testes. A Ana vai verificar os links das reuniões. Decidimos pedir apenas permissão de leitura. A gravação automática não está disponível.",
+    "transcript": "A ligação ao calendário precisa de testes. A ANA vai verificar os limpes das reuniões. Decidimos pedir apenas permissão de leitura. A gravação automática não está disponível.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 3.08,
+        "speaker": "Unlabeled speaker",
+        "text": "A ligação ao calendário precisa de testes."
+      },
+      {
+        "id": "s2",
+        "start": 3.08,
+        "end": 6.12,
+        "speaker": "Unlabeled speaker",
+        "text": "A ANA vai verificar os limpes das reuniões."
+      },
+      {
+        "id": "s3",
+        "start": 6.12,
+        "end": 9.24,
+        "speaker": "Unlabeled speaker",
+        "text": "Decidimos pedir apenas permissão de leitura."
+      },
+      {
+        "id": "s4",
+        "start": 9.24,
+        "end": 12.08,
+        "speaker": "Unlabeled speaker",
+        "text": "A gravação automática não está disponível."
+      }
+    ],
+    "seconds": 12.106875,
+    "transcriptionSeconds": 1.3999847929808311,
+    "wordErrors": 1,
+    "referenceWords": 27,
+    "notes": {
+      "summary": "The team discussed testing the calendar connection and requested permission for reading.",
+      "topics": [
+        {
+          "id": "3f62a782-6310-4b69-819b-9df5829f50cf",
+          "text": "calendar connection",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "1e4526fb-751e-476e-85da-88ee78ce22a1",
+          "text": "permission for reading",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "a107414f-c807-45e2-aca8-e94aa613e1f6",
+          "text": "Request permission to read the calendar connection.",
+          "evidence": [
+            "s2",
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "8cac7b86-124f-4f50-bf23-03841370aa8f",
+          "text": "Test the calendar connection.",
+          "evidence": [
+            "s1",
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [
+        {
+          "id": "9607f55d-3daa-4828-b511-85551420450f",
+          "text": "Schedule a meeting to discuss further actions.",
+          "evidence": [
+            "s2",
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "49135e37-561c-4bfd-bbe7-68c41b9cabe4",
+          "text": "Implement the permission request for reading.",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "questions": [
+        {
+          "id": "bff0c3c3-5cae-4db0-b42e-0a246694af2a",
+          "text": "What is the purpose of testing the calendar connection?",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "f7973d84-6f9b-4293-8a01-e7d2861e4bf4",
+          "text": "How will we ensure that the permission request for reading is granted?",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "a94f636a-f081-4071-9863-0ba326bc9bbf",
+          "text": "Consider automating the calendar connection process.",
+          "evidence": [
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "6a6cb44c-0574-4b4e-8607-65f96851ba29",
+          "text": "Discuss with the team how to handle unexpected issues during testing.",
+          "evidence": [
+            "s1",
+            "s2",
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ]
+    },
+    "notesSeconds": 7.973614879010711,
+    "notesModel": "qwen2.5:1.5b"
+  },
+  {
+    "id": "pt-5-noise",
+    "language": "pt",
+    "condition": "noise",
+    "reference": "A ligação ao calendário precisa de testes. A Ana vai verificar os links das reuniões. Decidimos pedir apenas permissão de leitura. A gravação automática não está disponível.",
+    "transcript": "A ligação ao calendário precisa de testes. A ANA vai verificar os limpes das reuniões. Decidimos pedir apenas permissão de leitura. A gravação automática não está disponível.",
+    "segments": [
+      {
+        "id": "s1",
+        "start": 0.0,
+        "end": 3.08,
+        "speaker": "Unlabeled speaker",
+        "text": "A ligação ao calendário precisa de testes."
+      },
+      {
+        "id": "s2",
+        "start": 3.08,
+        "end": 6.12,
+        "speaker": "Unlabeled speaker",
+        "text": "A ANA vai verificar os limpes das reuniões."
+      },
+      {
+        "id": "s3",
+        "start": 6.12,
+        "end": 9.24,
+        "speaker": "Unlabeled speaker",
+        "text": "Decidimos pedir apenas permissão de leitura."
+      },
+      {
+        "id": "s4",
+        "start": 9.24,
+        "end": 12.08,
+        "speaker": "Unlabeled speaker",
+        "text": "A gravação automática não está disponível."
+      }
+    ],
+    "seconds": 12.106875,
+    "transcriptionSeconds": 1.5498683340265416,
+    "wordErrors": 1,
+    "referenceWords": 27,
+    "notes": {
+      "summary": "The team discussed testing the calendar connection and requested permission for reading.",
+      "topics": [
+        {
+          "id": "87a3c474-26e8-4271-b0b0-c2c1c06171d7",
+          "text": "calendar connection",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "c39d1ee3-9bb3-49c8-aa87-b2a4dead2bc9",
+          "text": "permission for reading",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "decisions": [
+        {
+          "id": "33358f10-db86-43ed-bbb5-c28b929de99e",
+          "text": "Request permission to read the calendar connection.",
+          "evidence": [
+            "s2",
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "cfe3147e-002a-4a62-8a2b-0ab8961490e9",
+          "text": "Test the calendar connection.",
+          "evidence": [
+            "s1",
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "actions": [
+        {
+          "id": "a44a3d95-5c0f-4fe1-9c98-6a043d45b07d",
+          "text": "Schedule a meeting to discuss further actions.",
+          "evidence": [
+            "s2",
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "7a6c4c60-ea29-4ed6-ac95-7fc27dea364a",
+          "text": "Implement the permission request for reading.",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "questions": [
+        {
+          "id": "83bd6a7e-8bd3-4e63-8537-cb38c969aa92",
+          "text": "What is the purpose of testing the calendar connection?",
+          "evidence": [
+            "s1",
+            "s2"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "d4882a26-29a7-424b-b1d2-fc3cc47535a8",
+          "text": "How will we ensure that the permission request for reading is granted?",
+          "evidence": [
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "a0c818cc-37ad-4cc9-9aaa-ffe6ebc4a7cb",
+          "text": "Consider automating the calendar connection process.",
+          "evidence": [
+            "s4"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        },
+        {
+          "id": "76fbdcd1-c554-45b7-9fb4-e2a1ab744e53",
+          "text": "Discuss with the team how to handle unexpected issues during testing.",
+          "evidence": [
+            "s1",
+            "s2",
+            "s3"
+          ],
+          "owner": null,
+          "dueDate": null,
+          "status": "proposed"
+        }
+      ]
+    },
+    "notesSeconds": 7.5454353370005265,
+    "notesModel": "qwen2.5:1.5b"
+  }
+]

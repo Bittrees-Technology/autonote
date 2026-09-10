@@ -64,3 +64,9 @@ This release implements matching CRM sign-in behavior, not cross-application SSO
 The meeting library currently loads the latest 200 visible meetings and searches that set in the interface; the API also supports permission-filtered full-text queries. This is suitable for the initial pilot. Pagination is required before wider usage.
 
 The software license does not include hosting, inference service charges, or third-party model rights. Review [third-party notices](THIRD_PARTY_NOTICES.md).
+
+## Calendar and CRM integrations
+
+Google Calendar/Meet is the first supported calendar target. Read-only connection and individual event selection are implemented for manual recording; no meeting bot is running. Google OAuth setup is required. Bittrees CRM supports a scoped destination connection and reviewed publication of summaries and accepted actions. See [integration setup](docs/integrations.md).
+
+The current hosting budget is free resources only. Vercel defaults to demo mode until `AUTONOTE_MODE=live` is explicitly set after the launch gates pass. Separate free Frankfurt databases are provisioned, but live recording storage and a free processing host still need to be connected.

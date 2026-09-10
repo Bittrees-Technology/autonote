@@ -1,3 +1,5 @@
+import * as google from "../../../lib/google";
+import * as crm from "../../../lib/crm";
 import { z, ZodError } from "zod";
 import { pool } from "../../../lib/db";
 import {
@@ -31,7 +33,10 @@ async function handle(
   try {
     const path = (await params).path;
     const method = req.method;
-    if (!process.env.DATABASE_URL && path[0] !== "health")
+    const demoMode =
+      process.env.AUTONOTE_MODE === "demo" ||
+      (!!process.env.VERCEL && process.env.AUTONOTE_MODE !== "live");
+    if ((demoMode || !process.env.DATABASE_URL) && path[0] !== "health")
       throw new HttpError(
         503,
         "AutoNote is in preview. Account and recording services are awaiting production setup. You can explore the fictional demo.",
@@ -47,7 +52,8 @@ async function handle(
     if (path.join("/") === "health")
       return json({
         ok: true,
-        configured: !!process.env.DATABASE_URL,
+        configured: !demoMode && !!process.env.DATABASE_URL,
+        mode: demoMode ? "demo" : "live",
         storage: !!process.env.S3_BUCKET,
       });
     if (!process.env.DATABASE_URL)
@@ -114,6 +120,60 @@ async function handle(
     }
     const u = user!;
     if (method !== "GET") await rateLimit(`api:${u.id}`, 300);
+    if (path[0] === "integrations" && path[1] === "google") {
+      await rateLimit(`google:${u.id}`, 60);
+      if (path[2] === "callback" && method === "GET") {
+        if (url.searchParams.has("error"))
+          return Response.redirect(
+            new URL("/?google=cancelled", process.env.APP_URL!),
+            303,
+          );
+        await google.callback(
+          req,
+          u.id,
+          url.searchParams.get("code") || "",
+          url.searchParams.get("state") || "",
+        );
+        return Response.redirect(
+          new URL("/?connected=google", process.env.APP_URL!),
+          303,
+        );
+      }
+      if (path.length === 2 && method === "GET")
+        return json(await google.status(u.id));
+      if (path[2] === "events" && method === "GET")
+        return json(await google.events(u.id));
+      if (path[2] === "start" && method === "POST")
+        return json(await google.start(req, u.id));
+      if (path[2] === "select" && method === "POST")
+        return json(await google.select(u.id, data));
+      if (path[2] === "disconnect" && method === "POST")
+        return json(await google.disconnect(u.id));
+    }
+    if (path[0] === "integrations" && path[1] === "crm") {
+      if (path[2] === "callback" && method === "GET") {
+        await crm.callback(
+          req,
+          u.id,
+          url.searchParams.get("code") || "",
+          url.searchParams.get("state") || "",
+        );
+        return Response.redirect(
+          new URL("/?connected=crm", process.env.APP_URL || url.origin),
+          303,
+        );
+      }
+      if (method === "GET") return json(await crm.list(u.id));
+      if (path[2] === "start" && method === "POST")
+        return json(await crm.start(req, u.id));
+      if (path[2] === "disconnect" && method === "POST")
+        return json(await crm.disconnect(u.id, data.id));
+      if (path[2] === "preview" && method === "POST")
+        return json(await crm.preview(u.id, data));
+      if (path[2] === "publish" && method === "POST")
+        return json(await crm.publish(u.id, data.token));
+    }
+
     if (path[0] === "workspaces") {
       if (path.length === 1 && method === "POST")
         return json(await service.createWorkspace(u.id, data.name));

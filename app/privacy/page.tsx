@@ -51,6 +51,22 @@ export default function Privacy() {
         Resend sender. You can export your data and delete your account in
         Settings.
       </p>
+      <h2>Optional connections</h2>
+      <p>
+        Connecting Google Calendar grants read-only access to your primary
+        calendar. AutoNote stores the title, time, and Google Meet link only for
+        events you select. Selection does not start recording. Saved event
+        details are removed by worker cleanup one day after the event.
+        Disconnecting revokes Google access and removes the saved selection.
+      </p>
+      <p>
+        Connecting Bittrees CRM lets you review and publish a summary and
+        accepted actions to one chosen destination. Published copies follow the
+        CRM destination’s sharing rules and remain there after you delete the
+        AutoNote meeting or disconnect. Connection credentials are encrypted in
+        AutoNote. Account deletion removes local credentials; you can also
+        revoke access in Google Account connections and CRM.
+      </p>
       <h2>Beta limitations</h2>
       <p>
         Transcripts and generated notes can contain errors. Verify speakers,

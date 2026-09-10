@@ -1,4 +1,6 @@
 "use client";
+import { GoogleCalendarSettings } from "../components/google-calendar";
+import { CrmSettings, CrmPublish } from "../components/crm";
 import { useEffect, useRef, useState } from "react";
 import {
   Activity,
@@ -169,10 +171,29 @@ export default function App() {
     return d;
   }
   useEffect(() => {
-    refresh().catch((e) => {
-      setLoaded(true);
-      setNotice(e.message);
-    });
+    refresh()
+      .then(() => {
+        const q = new URLSearchParams(location.search);
+        if (q.get("meeting")) setSelected(q.get("meeting"));
+        if (q.get("connected") === "google" || q.has("google")) {
+          setNotice(
+            q.has("google")
+              ? "Google connection cancelled."
+              : "Google Calendar connected. Choose meetings in Settings.",
+          );
+          history.replaceState(null, "", "/");
+        }
+        if (q.get("connected") === "crm") {
+          setNotice(
+            "CRM connected. Open a meeting to review and publish notes.",
+          );
+          history.replaceState(null, "", "/");
+        }
+      })
+      .catch((e) => {
+        setLoaded(true);
+        setNotice(e.message);
+      });
     recordedChunks()
       .then((c) => setRecoverable(c.length > 0))
       .catch(() => {});
@@ -1617,6 +1638,12 @@ export default function App() {
                   </button>
                 )}
               </section>
+              {user && !demo && (
+                <>
+                  <GoogleCalendarSettings />
+                  <CrmSettings />
+                </>
+              )}
               <section>
                 <h2>Privacy and data</h2>
                 <p className="muted">
@@ -2035,6 +2062,15 @@ export default function App() {
           >
             Retry processing / regenerate notes
           </button>
+          {!demo && (
+            <button
+              className="secondary full"
+              disabled={!active.notes}
+              onClick={() => setModal("crm")}
+            >
+              Publish to Bittrees CRM
+            </button>
+          )}
           <p className="fine">
             Regeneration preserves accepted and completed actions. New
             suggestions remain drafts.
@@ -2125,6 +2161,17 @@ export default function App() {
             Create workspace
           </button>
           {error && <p role="alert">{error}</p>}
+        </Dialog>
+      )}
+      {modal === "crm" && active && (
+        <Dialog title="Publish to Bittrees CRM" onClose={() => setModal("")}>
+          <CrmPublish
+            meeting={active}
+            onDone={() => {
+              setModal("");
+              setNotice("Reviewed notes and actions published to CRM.");
+            }}
+          />
         </Dialog>
       )}
       {modal === "delete-account" && (

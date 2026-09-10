@@ -513,6 +513,18 @@ export async function createWorkspace(user: string, name: string) {
 }
 export async function accountExport(user: string) {
   return {
+    calendarSelections: (
+      await pool().query(
+        "SELECT event_id,title,meet_url,starts_at,ends_at,selected_at FROM google_selections WHERE user_id=$1",
+        [user],
+      )
+    ).rows,
+    crmConnections: (
+      await pool().query(
+        "SELECT id,workspace_name,target_name,expires_at,created_at FROM crm_connections WHERE user_id=$1",
+        [user],
+      )
+    ).rows,
     profile: (
       await pool().query("SELECT id,name,created_at FROM users WHERE id=$1", [
         user,
@@ -571,6 +583,10 @@ export async function deleteAccount(user: string) {
       "UPDATE challenges SET consumed=true,payload=NULL WHERE user_id=$1 OR value IN (SELECT value FROM identities WHERE user_id=$1)",
       [user],
     );
+    await db.query("DELETE FROM google_connections WHERE user_id=$1", [user]);
+    await db.query("DELETE FROM google_pending WHERE user_id=$1", [user]);
+    await db.query("DELETE FROM crm_connections WHERE user_id=$1", [user]);
+    await db.query("DELETE FROM crm_pending WHERE user_id=$1", [user]);
     await db.query("DELETE FROM identities WHERE user_id=$1", [user]);
     await db.query("DELETE FROM sessions WHERE user_id=$1", [user]);
     await db.query(

@@ -277,3 +277,121 @@ test("account deletion revokes identities, sessions, and owned content", async (
     "Deleted account",
   );
 });
+
+test("Google connection is session-bound, single-use and private", async () => {
+  const google = await import("../lib/google");
+  const account = await login(),
+    outsider = await login();
+  const uid = (await currentUser(req(account.session)))!.id;
+  const otherId = (await currentUser(req(outsider.session)))!.id;
+  process.env.GOOGLE_CLIENT_ID = "synthetic-client";
+  process.env.GOOGLE_CLIENT_SECRET = "synthetic-secret";
+  const fetchOriginal = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (input, init) => {
+    calls++;
+    assert.equal(String(input), "https://oauth2.googleapis.com/token");
+    assert.equal(
+      new URLSearchParams(init!.body as URLSearchParams).get("grant_type"),
+      "authorization_code",
+    );
+    return Response.json({
+      refresh_token: "synthetic-refresh",
+      scope: "https://www.googleapis.com/auth/calendar.events.readonly",
+    });
+  };
+  try {
+    const start = await google.start(req(account.session), uid);
+    const url = new URL(start.url),
+      state = url.searchParams.get("state")!;
+    assert.equal(
+      url.searchParams.get("scope"),
+      "https://www.googleapis.com/auth/calendar.events.readonly",
+    );
+    assert.equal(url.searchParams.get("code_challenge_method"), "S256");
+    await assert.rejects(
+      google.callback(req(outsider.session), uid, "synthetic-code", state),
+    );
+    await assert.rejects(
+      google.callback(req(outsider.session), otherId, "synthetic-code", state),
+    );
+    assert.equal(calls, 0);
+    await google.callback(req(account.session), uid, "synthetic-code", state);
+    await assert.rejects(
+      google.callback(req(account.session), uid, "synthetic-code", state),
+    );
+    assert.equal(calls, 1);
+    assert.equal((await google.status(uid)).connected, true);
+    assert.equal((await google.status(otherId)).connected, false);
+    const row = (
+      await pool().query(
+        "SELECT refresh_ciphertext FROM google_connections WHERE user_id=$1",
+        [uid],
+      )
+    ).rows[0];
+    assert.ok(!row.refresh_ciphertext.includes("synthetic-refresh"));
+    await deleteAccount(uid);
+    assert.equal((await google.status(uid)).connected, false);
+  } finally {
+    globalThis.fetch = fetchOriginal;
+    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
+  }
+});
+
+test("CRM publication requires an accepted selection and unchanged reviewed meeting", async () => {
+  const crm = await import("../lib/crm"),
+    { encrypt } = await import("../lib/secrets");
+  const account = await login(),
+    outsider = await login();
+  const uid = (await currentUser(req(account.session)))!.id,
+    otherId = (await currentUser(req(outsider.session)))!.id;
+  const ws = (
+    await pool().query("SELECT workspace_id FROM members WHERE user_id=$1", [
+      uid,
+    ])
+  ).rows[0].workspace_id;
+  const meetingId = randomUUID(),
+    connectionId = randomUUID(),
+    notes = structuredClone(demoMeeting.notes!);
+  notes.actions[0].status = "accepted";
+  await pool().query(
+    "INSERT INTO meetings(id,workspace_id,creator_id,title,status,notes) VALUES($1,$2,$3,'Synthetic CRM meeting','ready',$4)",
+    [meetingId, ws, uid, notes],
+  );
+  await pool().query(
+    "INSERT INTO crm_connections(id,user_id,token_ciphertext,workspace_name,target_name,expires_at) VALUES($1,$2,$3,'Synthetic workspace','Synthetic target',now()+interval '1 day')",
+    [connectionId, uid, encrypt("synthetic-bearer")],
+  );
+  const selection = {
+    connectionId,
+    meetingId,
+    version: 1,
+    summary: "Reviewed summary",
+    actionIds: [notes.actions[0].id],
+  };
+  await assert.rejects(crm.preview(otherId, selection));
+  await assert.rejects(
+    crm.preview(uid, { ...selection, actionIds: ["not-accepted"] }),
+  );
+  const preview = await crm.preview(uid, selection);
+  const fetchOriginal = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (_input, init) => {
+    calls++;
+    assert.equal(JSON.parse(init!.body as string).summary, "Reviewed summary");
+    return Response.json({ items: [] });
+  };
+  try {
+    await assert.rejects(crm.publish(otherId, preview.token));
+    await editMeeting(uid, meetingId, { version: 1, title: "Changed title" });
+    await assert.rejects(crm.publish(uid, preview.token));
+    assert.equal(calls, 0);
+    const fresh = await crm.preview(uid, { ...selection, version: 2 });
+    await crm.publish(uid, fresh.token);
+    await crm.publish(uid, fresh.token);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = fetchOriginal;
+  }
+});
