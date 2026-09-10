@@ -53,6 +53,13 @@ export function GoogleCalendarSettings() {
         in headphones. To include everyone, upload a recording made with
         participant consent that contains all speakers.
       </p>
+      {status?.configured && status.testing && (
+        <p className="message">
+          Google Calendar is in a limited pilot. Only Google accounts added to
+          the test list can connect. You may need to reconnect during testing.
+          Recording and uploads work without Google.
+        </p>
+      )}
       {!status ? (
         <p role="status">
           {error

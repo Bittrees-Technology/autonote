@@ -79,12 +79,13 @@ export default function Privacy() {
       </p>
       <h2>Optional connections</h2>
       <p>
-        Google Calendar is optional and requires administrator setup. When
-        enabled, it grants read-only calendar access. Only selected events’
-        title, time, and Meet link are saved. Selecting an event does not start
-        recording or send a bot. Saved selections expire in daily cleanup after
-        the event ends. Disconnecting removes saved selections and revokes
-        access.
+        Google Calendar is optional and currently limited to invited pilot
+        accounts. Connecting grants read-only access to calendar events;
+        AutoNote reads upcoming events from your primary calendar to show Google
+        Meet choices. Only selected events’ title, time, and Meet link are
+        saved. Selecting an event does not start recording or send a bot. Saved
+        selections expire in daily cleanup after the event ends. Disconnecting
+        removes saved selections and revokes access.
       </p>
       <p>
         Bittrees CRM publication requires your review and confirmation of a
@@ -92,6 +93,16 @@ export default function Privacy() {
         destination’s sharing rules and remain after you disconnect or delete an
         AutoNote meeting. Connection credentials are encrypted in AutoNote; you
         can also revoke access in Google and CRM.
+      </p>
+      <p>
+        Google connection tokens are encrypted in the account database. Calendar
+        data is used only to provide your chosen calendar features, never for
+        advertising, sale, or model training. AutoNote’s use and transfer of
+        information received from Google APIs follows the{" "}
+        <a href="https://developers.google.com/terms/api-services-user-data-policy">
+          Google API Services User Data Policy
+        </a>
+        , including its Limited Use requirements.
       </p>
       <h2>Help</h2>
       <p>

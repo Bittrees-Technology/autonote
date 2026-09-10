@@ -224,10 +224,10 @@ export function Landing({
           <details>
             <summary>Does AutoNote join Google Meet?</summary>
             <p>
-              No. Recording is manual. Google Calendar connection is being
-              prepared and is not available yet. Microphone recording does not
-              capture remote voices in headphones; upload a recording containing
-              all speakers when needed.
+              No. Recording is manual. Google Calendar connection is available
+              to invited pilot accounts while Google verification is pending.
+              Microphone recording does not capture remote voices in headphones;
+              upload a recording containing all speakers when needed.
             </p>
           </details>
           <details>
