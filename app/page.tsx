@@ -6,6 +6,7 @@ import {
   transcribeOnDevice,
   type LocalRecording,
 } from "../lib/device-recording";
+import { Landing } from "../components/landing";
 import { GoogleCalendarSettings } from "../components/google-calendar";
 import { CrmSettings, CrmPublish } from "../components/crm";
 import { useEffect, useRef, useState, useId } from "react";
@@ -112,6 +113,7 @@ function Dialog({
 }
 export default function App() {
   const [user, setUser] = useState<{ id: string; name: string } | null>(null),
+    [exploring, setExploring] = useState(false),
     [pendingInvite, setPendingInvite] = useState(""),
     [identities, setIdentities] = useState<any[]>([]),
     [workspaces, setWorkspaces] = useState<Workspace[]>([]),
@@ -904,1092 +906,1153 @@ export default function App() {
     );
   }
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <a className="brand" href="/" aria-label="AutoNote home">
-          <span className="brand-mark">
-            <Activity size={24} />
-          </span>
-          <span>
-            autonote<small>by bittrees</small>
-          </span>
-        </a>
-        <button
-          className="workspace-button"
-          onClick={() => (user ? openSettings() : signIn())}
-        >
-          <span className="workspace-avatar">
-            {demo ? "B" : currentWorkspace?.name[0] || "A"}
-          </span>
-          <span>
-            {demo ? "Bittrees demo" : currentWorkspace?.name || "My workspace"}
-            <small>
-              {demo ? "Fictional sample workspace" : currentWorkspace?.role}
-            </small>
-          </span>
-          <ChevronRight size={16} />
-        </button>
-        {user && !demo && (
-          <select
-            aria-label="Switch workspace"
-            className="workspace-select"
-            value={workspace}
-            onChange={(e) => {
-              setSelected(null);
-              setPage("meetings");
-              refresh(e.target.value).catch((e) => setError(e.message));
-            }}
-          >
-            {workspaces.map((w) => (
-              <option value={w.id} key={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <nav>
-          <button
-            className={page === "meetings" ? "active" : ""}
-            onClick={() => {
-              setPage("meetings");
-              setSelected(null);
-            }}
-          >
-            <FileAudio size={19} />
-            Meetings<span>{list.length}</span>
-          </button>
-          <button
-            className={page === "actions" ? "active" : ""}
-            onClick={() => setPage("actions")}
-          >
-            <Check size={19} />
-            Action items
-            <span>
-              {
-                allActions.filter(
-                  (a) => !["completed", "dismissed"].includes(a.status),
-                ).length
-              }
-            </span>
-          </button>
-          <button
-            className={page === "settings" ? "active" : ""}
-            onClick={openSettings}
-          >
-            <Settings size={19} />
-            Settings
-          </button>
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="privacy-note">
-            <ShieldCheck size={19} />
-            <div>
-              Your conversations,
-              <br />
-              under your control.
-            </div>
-          </div>
-          {user ? (
+    <div className={!user && !exploring ? "landing-shell" : "app-shell"}>
+      {!user && !exploring ? (
+        <Landing
+          onStart={() => signIn()}
+          onExplore={() => {
+            setExploring(true);
+            setPage("meetings");
+            setSelected("demo");
+          }}
+          notice={
+            pendingInvite
+              ? "You have a workspace invitation. Sign in with the invited email to accept it."
+              : error || notice || undefined
+          }
+        />
+      ) : (
+        <>
+          <aside className="sidebar">
+            <a className="brand" href="/" aria-label="AutoNote home">
+              <span className="brand-mark">
+                <Activity size={24} />
+              </span>
+              <span>
+                autonote<small>by bittrees</small>
+              </span>
+            </a>
             <button
-              className="profile"
-              onClick={() =>
-                run(async () => {
-                  await api("auth/logout", {});
-                  ++refreshSequence.current;
-                  setUser(null);
-                  setMeetings([]);
-                  setIdentities([]);
-                  setWorkspaces([]);
-                  setWorkspace("");
-                  setSettings(null);
-                  setAudioUrl("");
-                  setDeviceFiles([]);
-                  setDemo(true);
-                  setSelected("demo");
+              className="workspace-button"
+              onClick={() => (user ? openSettings() : signIn())}
+            >
+              <span className="workspace-avatar">
+                {demo ? "B" : currentWorkspace?.name[0] || "A"}
+              </span>
+              <span>
+                {demo
+                  ? "Bittrees demo"
+                  : currentWorkspace?.name || "My workspace"}
+                <small>
+                  {demo ? "Fictional sample workspace" : currentWorkspace?.role}
+                </small>
+              </span>
+              <ChevronRight size={16} />
+            </button>
+            {user && !demo && (
+              <select
+                aria-label="Switch workspace"
+                className="workspace-select"
+                value={workspace}
+                onChange={(e) => {
+                  setSelected(null);
                   setPage("meetings");
-                })
-              }
-            >
-              <span className="avatar">{user.name[0]}</span>
-              <span>{user.name}</span>
-              <LogOut size={16} />
-            </button>
-          ) : (
-            <button className="primary full" onClick={() => signIn()}>
-              <KeyRound size={16} />
-              Sign in
-            </button>
-          )}
-        </div>
-      </aside>
-      <main>
-        <div className="topbar">
-          <span>
-            <span className="status-dot" />{" "}
-            {demo ? "Explore AutoNote" : "Your meeting workspace"}
-          </span>
-          <div>
-            {demo && <span className="pill">DEMO</span>}
-            <a href="/privacy">Privacy</a>
-            <span className="beta">BETA</span>
-          </div>
-        </div>
-        {demo && (
-          <div className="demo-banner">
-            <span>
-              This is a fictional meeting. Sign in to record and save your own.
-            </span>
-            <button onClick={() => signIn()}>
-              Use AutoNote <ChevronRight size={14} />
-            </button>
-          </div>
-        )}
-        {pendingInvite && (
-          <div className="message">
-            <span>
-              A workspace invitation is ready. Use the email address it was sent
-              to.
-            </span>
-            <button
-              className="secondary"
-              disabled={busy}
-              onClick={() =>
-                user
-                  ? run(async () => {
-                      const result = await api("invites", {
-                        token: pendingInvite,
-                      });
-                      history.replaceState(null, "", "/");
-                      setPendingInvite("");
-                      await refresh(result.workspaceId);
-                      setSelected(null);
-                      setPage("meetings");
-                      setNotice("Invitation accepted.");
-                    })
-                  : signIn()
-              }
-            >
-              {user ? "Accept invitation" : "Sign in to accept"}
-            </button>
-          </div>
-        )}
-        {error && (
-          <div className="message error" role="alert">
-            {error}
-            <button onClick={() => setError("")} aria-label="Dismiss error">
-              <X size={16} />
-            </button>
-          </div>
-        )}
-        {notice && (
-          <div className="message" role="status">
-            {notice}
-            <button onClick={() => setNotice("")} aria-label="Dismiss notice">
-              <X size={16} />
-            </button>
-          </div>
-        )}
-        {!loaded && (
-          <div className="loading">
-            <Loader2 className="spin" />
-            Loading your workspace…
-          </div>
-        )}
-        {page === "meetings" && (
-          <>
-            <div className="page-heading">
-              <div>
-                {active && (
-                  <button className="back" onClick={() => setSelected(null)}>
-                    <ArrowLeft size={15} />
-                    All meetings
-                  </button>
-                )}
-                <h1>{active ? active.title : "Your meetings"}</h1>
-                <p>
-                  {active ? (
-                    <>
-                      <span>
-                        {new Date(active.created_at).toLocaleDateString(
-                          undefined,
-                          { month: "long", day: "numeric", year: "numeric" },
-                        )}
-                      </span>
-                      <span className="separator">·</span>
-                      <span>
-                        {active.duration
-                          ? Math.round(active.duration / 60) + " min"
-                          : "Processing"}
-                      </span>
-                      <span className="separator">·</span>
-                      <Lock size={13} />
-                      {active.visibility === "private"
-                        ? "Private"
-                        : "Workspace shared"}
-                    </>
-                  ) : (
-                    "Conversations become a clear next step."
-                  )}
-                </p>
+                  refresh(e.target.value).catch((e) => setError(e.message));
+                }}
+              >
+                {workspaces.map((w) => (
+                  <option value={w.id} key={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <nav>
+              <button
+                className={page === "meetings" ? "active" : ""}
+                onClick={() => {
+                  setPage("meetings");
+                  setSelected(null);
+                }}
+              >
+                <FileAudio size={19} />
+                Meetings<span>{list.length}</span>
+              </button>
+              <button
+                className={page === "actions" ? "active" : ""}
+                onClick={() => setPage("actions")}
+              >
+                <Check size={19} />
+                Action items
+                <span>
+                  {
+                    allActions.filter(
+                      (a) => !["completed", "dismissed"].includes(a.status),
+                    ).length
+                  }
+                </span>
+              </button>
+              <button
+                className={page === "settings" ? "active" : ""}
+                onClick={openSettings}
+              >
+                <Settings size={19} />
+                Settings
+              </button>
+            </nav>
+            <div className="sidebar-bottom">
+              <div className="privacy-note">
+                <ShieldCheck size={19} />
+                <div>
+                  Your conversations,
+                  <br />
+                  under your control.
+                </div>
               </div>
-              <div className="heading-actions">
+              {user ? (
                 <button
-                  className="secondary"
-                  disabled={readOnly}
-                  onClick={() => {
-                    if (!user || demo) {
-                      signIn();
-                      return;
-                    }
-                    setFile(null);
-                    setTitle("");
-                    setConsent(false);
-                    setProgress(0);
-                    setModal("upload");
-                  }}
+                  className="profile"
+                  onClick={() =>
+                    run(async () => {
+                      await api("auth/logout", {});
+                      ++refreshSequence.current;
+                      setUser(null);
+                      setMeetings([]);
+                      setIdentities([]);
+                      setWorkspaces([]);
+                      setWorkspace("");
+                      setSettings(null);
+                      setAudioUrl("");
+                      setDeviceFiles([]);
+                      setDemo(true);
+                      setSelected("demo");
+                      setPage("meetings");
+                    })
+                  }
                 >
-                  <Upload size={17} />
-                  Upload
+                  <span className="avatar">{user.name[0]}</span>
+                  <span>{user.name}</span>
+                  <LogOut size={16} />
                 </button>
-                <button
-                  className="primary"
-                  disabled={readOnly}
-                  onClick={() => {
-                    if (!user || demo) {
-                      signIn();
-                      return;
-                    }
-                    setFile(null);
-                    setTitle("");
-                    setConsent(false);
-                    setModal("record");
-                  }}
-                >
-                  <Mic size={17} />
-                  Record
+              ) : (
+                <button className="primary full" onClick={() => signIn()}>
+                  <KeyRound size={16} />
+                  Sign in
                 </button>
+              )}
+            </div>
+          </aside>
+          <main>
+            <div className="topbar">
+              <span>
+                <span className="status-dot" />{" "}
+                {demo ? "Explore AutoNote" : "Your meeting workspace"}
+              </span>
+              <div>
+                {demo && <span className="pill">DEMO</span>}
+                <a href="/privacy">Privacy</a>
+                <span className="beta">BETA</span>
               </div>
             </div>
-            {recoverable && user && !recording && (
-              <div className="message">
-                A recording is saved on this device.
-                <button onClick={recoverRecording}>Recover audio</button>
-                <button onClick={() => setModal("discard")}>Discard</button>
+            {demo && (
+              <div className="demo-banner">
+                <span>
+                  This is a fictional meeting. Sign in to record and save your
+                  own.
+                </span>
+                <button onClick={() => signIn()}>
+                  Use AutoNote <ChevronRight size={14} />
+                </button>
               </div>
             )}
-            {!active ? (
+            {pendingInvite && (
+              <div className="message">
+                <span>
+                  A workspace invitation is ready. Use the email address it was
+                  sent to.
+                </span>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    user
+                      ? run(async () => {
+                          const result = await api("invites", {
+                            token: pendingInvite,
+                          });
+                          history.replaceState(null, "", "/");
+                          setPendingInvite("");
+                          await refresh(result.workspaceId);
+                          setSelected(null);
+                          setPage("meetings");
+                          setNotice("Invitation accepted.");
+                        })
+                      : signIn()
+                  }
+                >
+                  {user ? "Accept invitation" : "Sign in to accept"}
+                </button>
+              </div>
+            )}
+            {error && (
+              <div className="message error" role="alert">
+                {error}
+                <button onClick={() => setError("")} aria-label="Dismiss error">
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+            {notice && (
+              <div className="message" role="status">
+                {notice}
+                <button
+                  onClick={() => setNotice("")}
+                  aria-label="Dismiss notice"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+            {!loaded && (
+              <div className="loading">
+                <Loader2 className="spin" />
+                Loading your workspace…
+              </div>
+            )}
+            {page === "meetings" && (
               <>
-                <div className="library-toolbar">
-                  <label className="search">
-                    <Search size={18} />
-                    <input
-                      aria-label="Search meetings and transcripts"
-                      placeholder="Search meetings and transcripts"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </label>
-                  <select
-                    aria-label="Filter meetings"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                  >
-                    <option value="all">All meetings</option>
-                    <option value="ready">Ready</option>
-                    <option value="processing">
-                      Processing / needs attention
-                    </option>
-                  </select>
-                </div>
-                <div className="meeting-list">
-                  {filtered.map((m) => (
+                <div className="page-heading">
+                  <div>
+                    {active && (
+                      <button
+                        className="back"
+                        onClick={() => setSelected(null)}
+                      >
+                        <ArrowLeft size={15} />
+                        All meetings
+                      </button>
+                    )}
+                    <h1>{active ? active.title : "Your meetings"}</h1>
+                    <p>
+                      {active ? (
+                        <>
+                          <span>
+                            {new Date(active.created_at).toLocaleDateString(
+                              undefined,
+                              {
+                                month: "long",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            )}
+                          </span>
+                          <span className="separator">·</span>
+                          <span>
+                            {active.duration
+                              ? Math.round(active.duration / 60) + " min"
+                              : "Processing"}
+                          </span>
+                          <span className="separator">·</span>
+                          <Lock size={13} />
+                          {active.visibility === "private"
+                            ? "Private"
+                            : "Workspace shared"}
+                        </>
+                      ) : (
+                        "Conversations become a clear next step."
+                      )}
+                    </p>
+                  </div>
+                  <div className="heading-actions">
                     <button
-                      className="meeting-row"
-                      key={m.id}
+                      className="secondary"
+                      disabled={readOnly}
                       onClick={() => {
-                        setSelected(m.id);
-                        setTab("overview");
+                        if (!user || demo) {
+                          signIn();
+                          return;
+                        }
+                        setFile(null);
+                        setTitle("");
+                        setConsent(false);
+                        setProgress(0);
+                        setModal("upload");
                       }}
                     >
-                      <span className="meeting-icon">
-                        <FileAudio size={22} />
-                      </span>
-                      <span className="grow">
-                        <strong>{m.title}</strong>
-                        <small>
-                          {new Date(m.created_at).toLocaleDateString()} ·{" "}
-                          {m.duration
-                            ? Math.round(m.duration / 60) + " min"
-                            : "Awaiting transcript"}
-                        </small>
-                      </span>
-                      <span
-                        className={
-                          "state " + (m.status === "ready" ? "ready" : "")
+                      <Upload size={17} />
+                      Upload
+                    </button>
+                    <button
+                      className="primary"
+                      disabled={readOnly}
+                      onClick={() => {
+                        if (!user || demo) {
+                          signIn();
+                          return;
                         }
-                      >
-                        {m.status}
-                      </span>
-                      <ChevronRight size={18} />
-                    </button>
-                  ))}
-                  {!filtered.length && (
-                    <div className="empty">
-                      <Headphones size={38} />
-                      <h2>
-                        {search
-                          ? "No matching meetings"
-                          : "A little less note-taking."}
-                      </h2>
-                      <p>
-                        {search
-                          ? "Try a different word from the conversation."
-                          : "Upload your first recording or capture a conversation with your microphone."}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="meeting-toolbar">
-                  <div
-                    className="tabs"
-                    role="tablist"
-                    aria-label="Meeting view"
-                  >
-                    {["overview", "transcript", "actions"].map((t) => (
-                      <button
-                        role="tab"
-                        aria-selected={tab === t}
-                        key={t}
-                        className={tab === t ? "active" : ""}
-                        onClick={() => setTab(t)}
-                      >
-                        {t === "overview"
-                          ? "Overview"
-                          : t === "transcript"
-                            ? "Transcript"
-                            : "Action items"}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="toolbar-buttons">
-                    <button
-                      className="text-button"
-                      disabled={!active.canEdit}
-                      onClick={() =>
-                        run(async () => {
-                          if (!demo) {
-                            setSettings(await api("workspaces/" + workspace));
-                            const sharing = await api(
-                              `meetings/${active.id}/sharing`,
-                            );
-                            setShareMode(sharing.visibility);
-                            setGrantIds(sharing.grantIds);
-                          } else {
-                            setShareMode(active.visibility);
-                            setGrantIds([]);
-                          }
-                          draftVersion.current = active.version;
-                          setModal("share");
-                        })
-                      }
+                        setFile(null);
+                        setTitle("");
+                        setConsent(false);
+                        setModal("record");
+                      }}
                     >
-                      <Users size={16} />
-                      Share
-                    </button>
-                    <button
-                      className="icon"
-                      aria-label="Export meeting"
-                      onClick={() => setModal("export")}
-                    >
-                      <ArrowDownToLine size={18} />
-                    </button>
-                    <button
-                      className="icon"
-                      aria-label="Meeting options"
-                      onClick={() => setModal("options")}
-                    >
-                      <MoreHorizontal size={20} />
+                      <Mic size={17} />
+                      Record
                     </button>
                   </div>
                 </div>
-                <div className="meeting-body">
-                  <div className="notes-pane">
-                    {active.error && (
-                      <div className="message error">{active.error}</div>
-                    )}
-                    {active.status !== "ready" && (
-                      <div className="processing">
-                        <Loader2
-                          size={18}
-                          className={active.status === "failed" ? "" : "spin"}
+                {recoverable && user && !recording && (
+                  <div className="message">
+                    A recording is saved on this device.
+                    <button onClick={recoverRecording}>Recover audio</button>
+                    <button onClick={() => setModal("discard")}>Discard</button>
+                  </div>
+                )}
+                {!active ? (
+                  <>
+                    <div className="library-toolbar">
+                      <label className="search">
+                        <Search size={18} />
+                        <input
+                          aria-label="Search meetings and transcripts"
+                          placeholder="Search meetings and transcripts"
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
                         />
-                        <div>
-                          <strong>
-                            {active.status === "failed"
-                              ? "Processing needs attention"
-                              : active.status}
-                          </strong>
+                      </label>
+                      <select
+                        aria-label="Filter meetings"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                      >
+                        <option value="all">All meetings</option>
+                        <option value="ready">Ready</option>
+                        <option value="processing">
+                          Processing / needs attention
+                        </option>
+                      </select>
+                    </div>
+                    <div className="meeting-list">
+                      {filtered.map((m) => (
+                        <button
+                          className="meeting-row"
+                          key={m.id}
+                          onClick={() => {
+                            setSelected(m.id);
+                            setTab("overview");
+                          }}
+                        >
+                          <span className="meeting-icon">
+                            <FileAudio size={22} />
+                          </span>
+                          <span className="grow">
+                            <strong>{m.title}</strong>
+                            <small>
+                              {new Date(m.created_at).toLocaleDateString()} ·{" "}
+                              {m.duration
+                                ? Math.round(m.duration / 60) + " min"
+                                : "Awaiting transcript"}
+                            </small>
+                          </span>
+                          <span
+                            className={
+                              "state " + (m.status === "ready" ? "ready" : "")
+                            }
+                          >
+                            {m.status}
+                          </span>
+                          <ChevronRight size={18} />
+                        </button>
+                      ))}
+                      {!filtered.length && (
+                        <div className="empty">
+                          <Headphones size={38} />
+                          <h2>
+                            {search
+                              ? "No matching meetings"
+                              : "A little less note-taking."}
+                          </h2>
                           <p>
-                            {active.transcript.length
-                              ? "Your transcript is available while notes are prepared."
-                              : "You can leave this page. The recording is processed in the background."}
+                            {search
+                              ? "Try a different word from the conversation."
+                              : "Upload your first recording or capture a conversation with your microphone."}
                           </p>
                         </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="meeting-toolbar">
+                      <div
+                        className="tabs"
+                        role="tablist"
+                        aria-label="Meeting view"
+                      >
+                        {["overview", "transcript", "actions"].map((t) => (
+                          <button
+                            role="tab"
+                            aria-selected={tab === t}
+                            key={t}
+                            className={tab === t ? "active" : ""}
+                            onClick={() => setTab(t)}
+                          >
+                            {t === "overview"
+                              ? "Overview"
+                              : t === "transcript"
+                                ? "Transcript"
+                                : "Action items"}
+                          </button>
+                        ))}
                       </div>
-                    )}
-                    {active.notes_stale && (
-                      <div className="message">
-                        The transcript was edited. Review or regenerate these
-                        notes.
+                      <div className="toolbar-buttons">
+                        <button
+                          className="text-button"
+                          disabled={!active.canEdit}
+                          onClick={() =>
+                            run(async () => {
+                              if (!demo) {
+                                setSettings(
+                                  await api("workspaces/" + workspace),
+                                );
+                                const sharing = await api(
+                                  `meetings/${active.id}/sharing`,
+                                );
+                                setShareMode(sharing.visibility);
+                                setGrantIds(sharing.grantIds);
+                              } else {
+                                setShareMode(active.visibility);
+                                setGrantIds([]);
+                              }
+                              draftVersion.current = active.version;
+                              setModal("share");
+                            })
+                          }
+                        >
+                          <Users size={16} />
+                          Share
+                        </button>
+                        <button
+                          className="icon"
+                          aria-label="Export meeting"
+                          onClick={() => setModal("export")}
+                        >
+                          <ArrowDownToLine size={18} />
+                        </button>
+                        <button
+                          className="icon"
+                          aria-label="Meeting options"
+                          onClick={() => setModal("options")}
+                        >
+                          <MoreHorizontal size={20} />
+                        </button>
                       </div>
-                    )}
-                    {tab === "overview" && (
-                      <>
-                        {active.notes ? (
+                    </div>
+                    <div className="meeting-body">
+                      <div className="notes-pane">
+                        {active.error && (
+                          <div className="message error">{active.error}</div>
+                        )}
+                        {active.status !== "ready" && (
+                          <div className="processing">
+                            <Loader2
+                              size={18}
+                              className={
+                                active.status === "failed" ? "" : "spin"
+                              }
+                            />
+                            <div>
+                              <strong>
+                                {active.status === "failed"
+                                  ? "Processing needs attention"
+                                  : active.status}
+                              </strong>
+                              <p>
+                                {active.transcript.length
+                                  ? "Your transcript is available while notes are prepared."
+                                  : "You can leave this page. The recording is processed in the background."}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {active.notes_stale && (
+                          <div className="message">
+                            The transcript was edited. Review or regenerate
+                            these notes.
+                          </div>
+                        )}
+                        {tab === "overview" && (
+                          <>
+                            {active.notes ? (
+                              <>
+                                <div className="summary-heading">
+                                  <span className="eyebrow">
+                                    <Activity size={15} />
+                                    {active.processing_mode === "device"
+                                      ? "QUOTED HIGHLIGHTS"
+                                      : "MEETING NOTES"}
+                                  </span>
+                                  {active.canEdit && (
+                                    <button
+                                      className="text-button"
+                                      onClick={() => {
+                                        draftVersion.current = active.version;
+                                        setNotesDraft(
+                                          structuredClone(active.notes),
+                                        );
+                                        setEditingNotes((v) => !v);
+                                      }}
+                                    >
+                                      {editingNotes ? "Cancel" : "Edit notes"}
+                                    </button>
+                                  )}
+                                </div>
+                                {editingNotes ? (
+                                  <textarea
+                                    className="summary-edit"
+                                    aria-label="Meeting summary"
+                                    value={notesDraft?.summary || ""}
+                                    onChange={(e) =>
+                                      setNotesDraft((d) => ({
+                                        ...d!,
+                                        summary: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                ) : (
+                                  <p className="summary">
+                                    {active.notes.summary}
+                                  </p>
+                                )}
+                                {noteSection("topics", "Discussion points")}
+                                {noteSection("decisions", "Decisions")}
+                                {noteSection("actions", "Next steps")}
+                                {noteSection("questions", "Open questions")}
+                                {active.processing_mode !== "device" &&
+                                  noteSection(
+                                    "recommendations",
+                                    "Suggestions for next time",
+                                  )}
+                                {editingNotes && (
+                                  <button
+                                    className="primary"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      run(async () => {
+                                        await saveMeeting(
+                                          { notes: notesDraft },
+                                          draftVersion.current,
+                                        );
+                                        setEditingNotes(false);
+                                      })
+                                    }
+                                  >
+                                    Save notes
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <div className="empty">
+                                <FileText size={32} />
+                                <h2>Notes will appear here</h2>
+                                <p>
+                                  Your summary, decisions, and next steps will
+                                  be ready after processing.
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {tab === "transcript" && (
                           <>
                             <div className="summary-heading">
                               <span className="eyebrow">
-                                <Activity size={15} />
-                                {active.processing_mode === "device"
-                                  ? "QUOTED HIGHLIGHTS"
-                                  : "MEETING NOTES"}
+                                TRANSCRIPT · {active.transcript.length} SEGMENTS
                               </span>
-                              {active.canEdit && (
+                              {active.canEdit && !!active.transcript.length && (
                                 <button
                                   className="text-button"
                                   onClick={() => {
                                     draftVersion.current = active.version;
-                                    setNotesDraft(
-                                      structuredClone(active.notes),
+                                    setTranscriptDraft(
+                                      structuredClone(active.transcript),
                                     );
-                                    setEditingNotes((v) => !v);
+                                    setEditTranscript((v) => !v);
                                   }}
                                 >
-                                  {editingNotes ? "Cancel" : "Edit notes"}
+                                  {editTranscript
+                                    ? "Cancel"
+                                    : "Edit transcript"}
                                 </button>
                               )}
                             </div>
-                            {editingNotes ? (
-                              <textarea
-                                className="summary-edit"
-                                aria-label="Meeting summary"
-                                value={notesDraft?.summary || ""}
-                                onChange={(e) =>
-                                  setNotesDraft((d) => ({
-                                    ...d!,
-                                    summary: e.target.value,
-                                  }))
-                                }
-                              />
-                            ) : (
-                              <p className="summary">{active.notes.summary}</p>
-                            )}
-                            {noteSection("topics", "Discussion points")}
-                            {noteSection("decisions", "Decisions")}
-                            {noteSection("actions", "Next steps")}
-                            {noteSection("questions", "Open questions")}
-                            {active.processing_mode !== "device" &&
-                              noteSection(
-                                "recommendations",
-                                "Suggestions for next time",
-                              )}
-                            {editingNotes && (
+                            {(editTranscript
+                              ? transcriptDraft
+                              : active.transcript
+                            ).map((s, i) => (
+                              <div
+                                className="transcript-segment"
+                                id={"segment-" + s.id}
+                                key={s.id}
+                              >
+                                <button
+                                  className="timestamp"
+                                  onClick={() => seek(s.start)}
+                                >
+                                  {stamp(s.start)}
+                                  <Play size={11} />
+                                </button>
+                                <div className="grow">
+                                  {editTranscript ? (
+                                    <>
+                                      <input
+                                        aria-label="Speaker name"
+                                        value={s.speaker}
+                                        onChange={(e) =>
+                                          setTranscriptDraft((d) =>
+                                            d.map((v, j) =>
+                                              i === j
+                                                ? {
+                                                    ...v,
+                                                    speaker: e.target.value,
+                                                  }
+                                                : v,
+                                            ),
+                                          )
+                                        }
+                                      />
+                                      <textarea
+                                        aria-label={
+                                          "Transcript at " + stamp(s.start)
+                                        }
+                                        value={s.text}
+                                        onChange={(e) =>
+                                          setTranscriptDraft((d) =>
+                                            d.map((v, j) =>
+                                              i === j
+                                                ? { ...v, text: e.target.value }
+                                                : v,
+                                            ),
+                                          )
+                                        }
+                                      />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <strong>{s.speaker}</strong>
+                                      <p>{s.text}</p>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                            {editTranscript && (
                               <button
                                 className="primary"
                                 disabled={busy}
                                 onClick={() =>
                                   run(async () => {
                                     await saveMeeting(
-                                      { notes: notesDraft },
+                                      { transcript: transcriptDraft },
                                       draftVersion.current,
                                     );
-                                    setEditingNotes(false);
+                                    setEditTranscript(false);
                                   })
                                 }
                               >
-                                Save notes
+                                Save transcript
                               </button>
                             )}
+                            {!active.transcript.length && (
+                              <p className="muted">
+                                Transcription has not completed yet.
+                              </p>
+                            )}
                           </>
-                        ) : (
-                          <div className="empty">
-                            <FileText size={32} />
-                            <h2>Notes will appear here</h2>
-                            <p>
-                              Your summary, decisions, and next steps will be
-                              ready after processing.
-                            </p>
-                          </div>
                         )}
-                      </>
-                    )}
-                    {tab === "transcript" && (
-                      <>
-                        <div className="summary-heading">
-                          <span className="eyebrow">
-                            TRANSCRIPT · {active.transcript.length} SEGMENTS
-                          </span>
-                          {active.canEdit && !!active.transcript.length && (
-                            <button
-                              className="text-button"
-                              onClick={() => {
-                                draftVersion.current = active.version;
-                                setTranscriptDraft(
-                                  structuredClone(active.transcript),
+                        {tab === "actions" &&
+                          noteSection("actions", "Action items")}
+                      </div>
+                      <aside className="meeting-aside">
+                        <div className="audio-card">
+                          <div className="audio-title">
+                            <Headphones size={18} />
+                            <strong>Recording</strong>
+                          </div>
+                          <div className="waveform" aria-hidden="true">
+                            {Array.from({ length: 36 }, (_, i) => (
+                              <i
+                                key={i}
+                                style={{
+                                  height: 12 + ((i * 37 + 17) % 55) + "px",
+                                }}
+                              />
+                            ))}
+                          </div>
+                          {audioUrl ? (
+                            <audio
+                              controls
+                              src={audioUrl}
+                              ref={player}
+                              onError={() => {
+                                setAudioUrl("");
+                                setNotice(
+                                  "Playback link expired. Press play to refresh it.",
                                 );
-                                setEditTranscript((v) => !v);
                               }}
+                            />
+                          ) : (
+                            <button
+                              className="play-recording"
+                              onClick={() => seek(0)}
+                              disabled={
+                                active.recording_deleted &&
+                                active.processing_mode !== "device" &&
+                                !demo
+                              }
                             >
-                              {editTranscript ? "Cancel" : "Edit transcript"}
+                              <Play size={17} />
+                              {demo
+                                ? "Demo recording"
+                                : active.processing_mode === "device"
+                                  ? "Play device recording"
+                                  : active.recording_deleted
+                                    ? "Recording expired"
+                                    : "Play recording"}
+                              <span>
+                                {active.duration ? stamp(active.duration) : "—"}
+                              </span>
                             </button>
                           )}
-                        </div>
-                        {(editTranscript
-                          ? transcriptDraft
-                          : active.transcript
-                        ).map((s, i) => (
-                          <div
-                            className="transcript-segment"
-                            id={"segment-" + s.id}
-                            key={s.id}
-                          >
-                            <button
-                              className="timestamp"
-                              onClick={() => seek(s.start)}
-                            >
-                              {stamp(s.start)}
-                              <Play size={11} />
-                            </button>
-                            <div className="grow">
-                              {editTranscript ? (
-                                <>
-                                  <input
-                                    aria-label="Speaker name"
-                                    value={s.speaker}
-                                    onChange={(e) =>
-                                      setTranscriptDraft((d) =>
-                                        d.map((v, j) =>
-                                          i === j
-                                            ? { ...v, speaker: e.target.value }
-                                            : v,
-                                        ),
-                                      )
-                                    }
-                                  />
-                                  <textarea
-                                    aria-label={
-                                      "Transcript at " + stamp(s.start)
-                                    }
-                                    value={s.text}
-                                    onChange={(e) =>
-                                      setTranscriptDraft((d) =>
-                                        d.map((v, j) =>
-                                          i === j
-                                            ? { ...v, text: e.target.value }
-                                            : v,
-                                        ),
-                                      )
-                                    }
-                                  />
-                                </>
-                              ) : (
-                                <>
-                                  <strong>{s.speaker}</strong>
-                                  <p>{s.text}</p>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        {editTranscript && (
-                          <button
-                            className="primary"
-                            disabled={busy}
-                            onClick={() =>
-                              run(async () => {
-                                await saveMeeting(
-                                  { transcript: transcriptDraft },
-                                  draftVersion.current,
-                                );
-                                setEditTranscript(false);
-                              })
-                            }
-                          >
-                            Save transcript
-                          </button>
-                        )}
-                        {!active.transcript.length && (
-                          <p className="muted">
-                            Transcription has not completed yet.
+                          <p>
+                            {demo
+                              ? "Fictional sample · no audio file"
+                              : active.processing_mode === "device"
+                                ? "Audio stays on the recording device; it is not uploaded or shared."
+                                : active.recording_deleted
+                                  ? "The transcript and notes are still available."
+                                  : "Private audio · short-lived playback access"}
                           </p>
-                        )}
-                      </>
-                    )}
-                    {tab === "actions" &&
-                      noteSection("actions", "Action items")}
-                  </div>
-                  <aside className="meeting-aside">
-                    <div className="audio-card">
-                      <div className="audio-title">
-                        <Headphones size={18} />
-                        <strong>Recording</strong>
-                      </div>
-                      <div className="waveform" aria-hidden="true">
-                        {Array.from({ length: 36 }, (_, i) => (
-                          <i
-                            key={i}
-                            style={{ height: 12 + ((i * 37 + 17) % 55) + "px" }}
-                          />
-                        ))}
-                      </div>
-                      {audioUrl ? (
-                        <audio
-                          controls
-                          src={audioUrl}
-                          ref={player}
-                          onError={() => {
-                            setAudioUrl("");
-                            setNotice(
-                              "Playback link expired. Press play to refresh it.",
-                            );
-                          }}
-                        />
-                      ) : (
-                        <button
-                          className="play-recording"
-                          onClick={() => seek(0)}
-                          disabled={
-                            active.recording_deleted &&
-                            active.processing_mode !== "device" &&
-                            !demo
-                          }
-                        >
-                          <Play size={17} />
-                          {demo
-                            ? "Demo recording"
-                            : active.processing_mode === "device"
-                              ? "Play device recording"
-                              : active.recording_deleted
-                                ? "Recording expired"
-                                : "Play recording"}
-                          <span>
-                            {active.duration ? stamp(active.duration) : "—"}
-                          </span>
-                        </button>
-                      )}
-                      <p>
-                        {demo
-                          ? "Fictional sample · no audio file"
-                          : active.processing_mode === "device"
-                            ? "Audio stays on the recording device; it is not uploaded or shared."
-                            : active.recording_deleted
-                              ? "The transcript and notes are still available."
-                              : "Private audio · short-lived playback access"}
-                      </p>
-                    </div>
-                    <div className="aside-section">
-                      <h3>In this conversation</h3>
-                      {[
-                        ...new Set(active.transcript.map((s) => s.speaker)),
-                      ].map((s, i) => (
-                        <div className="speaker" key={s}>
-                          <span className={"avatar color-" + (i % 3)}>
-                            {s[0]}
-                          </span>
-                          <span>{s}</span>
                         </div>
-                      ))}
-                      {!active.transcript.length && (
-                        <p className="muted">
-                          Speakers appear after transcription.
-                        </p>
-                      )}
+                        <div className="aside-section">
+                          <h3>In this conversation</h3>
+                          {[
+                            ...new Set(active.transcript.map((s) => s.speaker)),
+                          ].map((s, i) => (
+                            <div className="speaker" key={s}>
+                              <span className={"avatar color-" + (i % 3)}>
+                                {s[0]}
+                              </span>
+                              <span>{s}</span>
+                            </div>
+                          ))}
+                          {!active.transcript.length && (
+                            <p className="muted">
+                              Speakers appear after transcription.
+                            </p>
+                          )}
+                        </div>
+                        <div className="aside-section">
+                          <h3>A useful starting point</h3>
+                          <p className="muted">
+                            {active.processing_mode === "device"
+                              ? "Highlights quote your transcript. Review action candidates before accepting them. Owners and dates are never inferred. Speaker names need manual review."
+                              : "Review names, dates, and decisions before sharing. Suggestions are drafts, with links to the conversation."}
+                          </p>
+                        </div>
+                        <div className="private-label">
+                          <Lock size={14} />
+                          {active.visibility === "private"
+                            ? "Only you and people you choose"
+                            : "Shared in your workspace"}
+                        </div>
+                      </aside>
                     </div>
-                    <div className="aside-section">
-                      <h3>A useful starting point</h3>
-                      <p className="muted">
-                        {active.processing_mode === "device"
-                          ? "Highlights quote your transcript. Review action candidates before accepting them. Owners and dates are never inferred. Speaker names need manual review."
-                          : "Review names, dates, and decisions before sharing. Suggestions are drafts, with links to the conversation."}
+                  </>
+                )}
+              </>
+            )}
+            {page === "actions" && (
+              <>
+                <div className="page-heading">
+                  <div>
+                    <h1>Action items</h1>
+                    <p>The next step, with the conversation behind it.</p>
+                  </div>
+                </div>
+                <div className="action-library">
+                  {allActions.map((a) => (
+                    <button
+                      key={a.meeting.id + a.id}
+                      className="meeting-row"
+                      onClick={() => {
+                        setPage("meetings");
+                        setSelected(a.meeting.id);
+                        setTab("actions");
+                      }}
+                    >
+                      <span className="meeting-icon">
+                        <Check size={21} />
+                      </span>
+                      <span className="grow">
+                        <strong>{a.text}</strong>
+                        <small>
+                          {a.meeting.title} · {a.owner || "Unassigned"} ·{" "}
+                          {a.dueDate || "No date stated"}
+                        </small>
+                      </span>
+                      <span className="state">{a.status}</span>
+                    </button>
+                  ))}
+                  {!allActions.length && (
+                    <div className="empty">
+                      <Check size={35} />
+                      <h2>No actions yet</h2>
+                      <p>
+                        Action items from your meetings will appear here for
+                        review.
                       </p>
                     </div>
-                    <div className="private-label">
-                      <Lock size={14} />
-                      {active.visibility === "private"
-                        ? "Only you and people you choose"
-                        : "Shared in your workspace"}
-                    </div>
-                  </aside>
+                  )}
                 </div>
               </>
             )}
-          </>
-        )}
-        {page === "actions" && (
-          <>
-            <div className="page-heading">
-              <div>
-                <h1>Action items</h1>
-                <p>The next step, with the conversation behind it.</p>
-              </div>
-            </div>
-            <div className="action-library">
-              {allActions.map((a) => (
-                <button
-                  key={a.meeting.id + a.id}
-                  className="meeting-row"
-                  onClick={() => {
-                    setPage("meetings");
-                    setSelected(a.meeting.id);
-                    setTab("actions");
-                  }}
-                >
-                  <span className="meeting-icon">
-                    <Check size={21} />
-                  </span>
-                  <span className="grow">
-                    <strong>{a.text}</strong>
-                    <small>
-                      {a.meeting.title} · {a.owner || "Unassigned"} ·{" "}
-                      {a.dueDate || "No date stated"}
-                    </small>
-                  </span>
-                  <span className="state">{a.status}</span>
-                </button>
-              ))}
-              {!allActions.length && (
-                <div className="empty">
-                  <Check size={35} />
-                  <h2>No actions yet</h2>
-                  <p>
-                    Action items from your meetings will appear here for review.
-                  </p>
+            {page === "settings" && (
+              <>
+                <div className="page-heading">
+                  <div>
+                    <h1>Settings</h1>
+                    <p>Your identity, your workspace, your recordings.</p>
+                  </div>
                 </div>
-              )}
-            </div>
-          </>
-        )}
-        {page === "settings" && (
-          <>
-            <div className="page-heading">
-              <div>
-                <h1>Settings</h1>
-                <p>Your identity, your workspace, your recordings.</p>
-              </div>
-            </div>
-            <div className="settings-grid">
-              <section>
-                <h2>Sign-in methods</h2>
-                <p className="muted">
-                  Link verified email and Ethereum identities to one account.
-                </p>
-                {identities.map((i) => (
-                  <div className="identity" key={i.value}>
-                    <ShieldCheck size={18} />
-                    <span>{i.value}</span>
-                    <small>{i.kind === "email" ? "Email" : "Ethereum"}</small>
-                  </div>
-                ))}
-                <button className="secondary" onClick={() => signIn(!!user)}>
-                  Link a sign-in method
-                </button>
-                {user && (
-                  <button
-                    className="text-button"
-                    onClick={() =>
-                      run(async () => {
-                        const r = await api("account/export");
-                        download(
-                          JSON.stringify(r, null, 2),
-                          "autonote-account.json",
-                          "application/json",
-                        );
-                      })
-                    }
-                  >
-                    Export my data
-                  </button>
-                )}
-              </section>
-              {user && processingMode === "device" && (
-                <section>
-                  <h2>Recordings on this device</h2>
-                  <p className="muted">
-                    These files stay in this browser. Download important
-                    recordings before clearing browser data. Signing out keeps
-                    local audio; remove it here on a shared device.
-                  </p>
-                  {!deviceFiles.length && (
-                    <p>No saved recordings on this device.</p>
-                  )}
-                  {deviceFiles.map((r) => (
-                    <div className="identity" key={r.key}>
-                      <span>
-                        {r.title} ·{" "}
-                        {r.saved
-                          ? "Transcript saved"
-                          : "Not yet saved to your account"}
-                      </span>
-                      {!r.saved && (
-                        <button
-                          className="text-button"
-                          disabled={busy}
-                          onClick={() => {
-                            setWorkspace(r.workspace);
-                            setTitle(r.title);
-                            setLanguage(r.language);
-                            setFile(
-                              new File([r.file], r.name, {
-                                type: r.file.type,
-                                lastModified: Number(
-                                  r.fingerprint.split(":").at(-1),
-                                ),
-                              }),
-                            );
-                            setConsent(false);
-                            setModal("upload");
-                          }}
-                        >
-                          Resume
-                        </button>
-                      )}
-                      <button
-                        className="text-button"
-                        onClick={() => {
-                          const url = URL.createObjectURL(r.file);
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = r.name;
-                          a.click();
-                          setTimeout(() => URL.revokeObjectURL(url), 1000);
-                        }}
-                      >
-                        Download
-                      </button>
-                      <button
-                        className="text-button"
-                        onClick={() => {
-                          if (
-                            confirm(
-                              "Remove this audio file from this device? Download it first if you need a copy.",
-                            )
-                          )
-                            void run(async () => {
-                              await forgetRecording(r.key);
-                              setDeviceFiles(await localRecordings(user.id));
-                            });
-                        }}
-                      >
-                        Remove audio
-                      </button>
-                    </div>
-                  ))}
-                </section>
-              )}
-              <section>
-                <h2>Workspace</h2>
-                {demo ? (
-                  <p className="muted">
-                    Sign in to create your workspace and manage membership.
-                  </p>
-                ) : (
-                  <>
-                    <label>
-                      Name
-                      <input
-                        value={workspaceName}
-                        onChange={(e) => setWorkspaceName(e.target.value)}
-                        disabled={settings?.role !== "owner"}
-                      />
-                    </label>
-                    {processingMode !== "device" && (
-                      <label>
-                        Keep recordings for
-                        <select
-                          value={retention}
-                          disabled={settings?.role !== "owner"}
-                          onChange={(e) => setRetention(Number(e.target.value))}
-                        >
-                          {[1, 7, 14, 30, 60, 90, 365].map((d) => (
-                            <option value={d} key={d}>
-                              {d} days
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
+                <div className="settings-grid">
+                  <section>
+                    <h2>Sign-in methods</h2>
                     <p className="muted">
-                      Transcripts and notes remain until deleted.{" "}
-                      {processingMode === "device"
-                        ? "Audio stays in this browser until you remove it or clear browser storage. Up to 20 active meetings per account."
-                        : `${Math.round(settings?.usage || 0)} of ${currentWorkspace?.monthly_minutes} transcription minutes used this month.`}
+                      Link verified email and Ethereum identities to one
+                      account.
                     </p>
-                    {settings?.role === "owner" && (
+                    {identities.map((i) => (
+                      <div className="identity" key={i.value}>
+                        <ShieldCheck size={18} />
+                        <span>{i.value}</span>
+                        <small>
+                          {i.kind === "email" ? "Email" : "Ethereum"}
+                        </small>
+                      </div>
+                    ))}
+                    <button
+                      className="secondary"
+                      onClick={() => signIn(!!user)}
+                    >
+                      Link a sign-in method
+                    </button>
+                    {user && (
                       <button
-                        className="secondary"
+                        className="text-button"
                         onClick={() =>
                           run(async () => {
-                            await api("workspaces/" + workspace, {
-                              action: "settings",
-                              name: workspaceName,
-                              retentionDays: retention,
-                            });
-                            await refresh();
-                            setNotice("Workspace settings saved.");
+                            const r = await api("account/export");
+                            download(
+                              JSON.stringify(r, null, 2),
+                              "autonote-account.json",
+                              "application/json",
+                            );
                           })
                         }
                       >
-                        Save workspace settings
+                        Export my data
                       </button>
                     )}
-                  </>
-                )}
-                <button
-                  className="text-button"
-                  onClick={() => (user ? setModal("workspace") : signIn())}
-                >
-                  <Plus size={15} />
-                  New workspace
-                </button>
-              </section>
-              <section>
-                <h2>People</h2>
-                {(settings?.members || []).map((m: any) => (
-                  <div className="member" key={m.user_id}>
-                    <span className="grow">{m.name}</span>
-                    {settings.role === "owner" ? (
-                      <select
-                        aria-label={"Role for " + m.name}
-                        value={m.role}
-                        onChange={(e) =>
-                          run(async () => {
-                            await api("workspaces/" + workspace, {
-                              action: "member",
-                              userId: m.user_id,
-                              role: e.target.value,
-                            });
-                            setSettings(await api("workspaces/" + workspace));
-                            await refresh();
-                          })
-                        }
-                      >
-                        {["owner", "editor", "viewer", "remove"].map((r) => (
-                          <option key={r}>{r}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <small>{m.role}</small>
-                    )}
-                  </div>
-                ))}
-                {settings?.role === "owner" && (
-                  <>
-                    <label>
-                      Invite by verified email
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="name@example.org"
-                      />
-                    </label>
-                    <div className="row">
-                      <select
-                        aria-label="Invite role"
-                        value={inviteRole}
-                        onChange={(e) => setInviteRole(e.target.value)}
-                      >
-                        <option>viewer</option>
-                        <option>editor</option>
-                      </select>
-                      <button
-                        className="secondary"
-                        onClick={() =>
-                          run(async () => {
-                            const d = await api("workspaces/" + workspace, {
-                              action: "invite",
-                              email: inviteEmail,
-                              role: inviteRole,
-                            });
-                            setInviteUrl(d.inviteUrl);
-                            setSettings(await api("workspaces/" + workspace));
-                          })
-                        }
-                      >
-                        Create invite link
-                      </button>
-                    </div>
-                    {inviteUrl && (
-                      <label>
-                        Share this link with the invited person
-                        <input
-                          readOnly
-                          value={inviteUrl}
-                          onFocus={(e) => e.target.select()}
-                        />
-                      </label>
-                    )}
-                    {settings.invites
-                      .filter((i: any) => !i.revoked_at && !i.accepted_at)
-                      .map((i: any) => (
-                        <div className="member" key={i.id}>
-                          <span>{i.email}</span>
+                  </section>
+                  {user && processingMode === "device" && (
+                    <section>
+                      <h2>Recordings on this device</h2>
+                      <p className="muted">
+                        These files stay in this browser. Download important
+                        recordings before clearing browser data. Signing out
+                        keeps local audio; remove it here on a shared device.
+                      </p>
+                      {!deviceFiles.length && (
+                        <p>No saved recordings on this device.</p>
+                      )}
+                      {deviceFiles.map((r) => (
+                        <div className="identity" key={r.key}>
+                          <span>
+                            {r.title} ·{" "}
+                            {r.saved
+                              ? "Transcript saved"
+                              : "Not yet saved to your account"}
+                          </span>
+                          {!r.saved && (
+                            <button
+                              className="text-button"
+                              disabled={busy}
+                              onClick={() => {
+                                setWorkspace(r.workspace);
+                                setTitle(r.title);
+                                setLanguage(r.language);
+                                setFile(
+                                  new File([r.file], r.name, {
+                                    type: r.file.type,
+                                    lastModified: Number(
+                                      r.fingerprint.split(":").at(-1),
+                                    ),
+                                  }),
+                                );
+                                setConsent(false);
+                                setModal("upload");
+                              }}
+                            >
+                              Resume
+                            </button>
+                          )}
                           <button
                             className="text-button"
+                            onClick={() => {
+                              const url = URL.createObjectURL(r.file);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = r.name;
+                              a.click();
+                              setTimeout(() => URL.revokeObjectURL(url), 1000);
+                            }}
+                          >
+                            Download
+                          </button>
+                          <button
+                            className="text-button"
+                            onClick={() => {
+                              if (
+                                confirm(
+                                  "Remove this audio file from this device? Download it first if you need a copy.",
+                                )
+                              )
+                                void run(async () => {
+                                  await forgetRecording(r.key);
+                                  setDeviceFiles(
+                                    await localRecordings(user.id),
+                                  );
+                                });
+                            }}
+                          >
+                            Remove audio
+                          </button>
+                        </div>
+                      ))}
+                    </section>
+                  )}
+                  <section>
+                    <h2>Workspace</h2>
+                    {demo ? (
+                      <p className="muted">
+                        Sign in to create your workspace and manage membership.
+                      </p>
+                    ) : (
+                      <>
+                        <label>
+                          Name
+                          <input
+                            value={workspaceName}
+                            onChange={(e) => setWorkspaceName(e.target.value)}
+                            disabled={settings?.role !== "owner"}
+                          />
+                        </label>
+                        {processingMode !== "device" && (
+                          <label>
+                            Keep recordings for
+                            <select
+                              value={retention}
+                              disabled={settings?.role !== "owner"}
+                              onChange={(e) =>
+                                setRetention(Number(e.target.value))
+                              }
+                            >
+                              {[1, 7, 14, 30, 60, 90, 365].map((d) => (
+                                <option value={d} key={d}>
+                                  {d} days
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+                        <p className="muted">
+                          Transcripts and notes remain until deleted.{" "}
+                          {processingMode === "device"
+                            ? "Audio stays in this browser until you remove it or clear browser storage. Up to 20 active meetings per account."
+                            : `${Math.round(settings?.usage || 0)} of ${currentWorkspace?.monthly_minutes} transcription minutes used this month.`}
+                        </p>
+                        {settings?.role === "owner" && (
+                          <button
+                            className="secondary"
                             onClick={() =>
                               run(async () => {
                                 await api("workspaces/" + workspace, {
-                                  action: "revoke",
-                                  inviteId: i.id,
+                                  action: "settings",
+                                  name: workspaceName,
+                                  retentionDays: retention,
                                 });
+                                await refresh();
+                                setNotice("Workspace settings saved.");
+                              })
+                            }
+                          >
+                            Save workspace settings
+                          </button>
+                        )}
+                      </>
+                    )}
+                    <button
+                      className="text-button"
+                      onClick={() => (user ? setModal("workspace") : signIn())}
+                    >
+                      <Plus size={15} />
+                      New workspace
+                    </button>
+                  </section>
+                  <section>
+                    <h2>People</h2>
+                    {(settings?.members || []).map((m: any) => (
+                      <div className="member" key={m.user_id}>
+                        <span className="grow">{m.name}</span>
+                        {settings.role === "owner" ? (
+                          <select
+                            aria-label={"Role for " + m.name}
+                            value={m.role}
+                            onChange={(e) =>
+                              run(async () => {
+                                await api("workspaces/" + workspace, {
+                                  action: "member",
+                                  userId: m.user_id,
+                                  role: e.target.value,
+                                });
+                                setSettings(
+                                  await api("workspaces/" + workspace),
+                                );
+                                await refresh();
+                              })
+                            }
+                          >
+                            {["owner", "editor", "viewer", "remove"].map(
+                              (r) => (
+                                <option key={r}>{r}</option>
+                              ),
+                            )}
+                          </select>
+                        ) : (
+                          <small>{m.role}</small>
+                        )}
+                      </div>
+                    ))}
+                    {settings?.role === "owner" && (
+                      <>
+                        <label>
+                          Invite by verified email
+                          <input
+                            type="email"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder="name@example.org"
+                          />
+                        </label>
+                        <div className="row">
+                          <select
+                            aria-label="Invite role"
+                            value={inviteRole}
+                            onChange={(e) => setInviteRole(e.target.value)}
+                          >
+                            <option>viewer</option>
+                            <option>editor</option>
+                          </select>
+                          <button
+                            className="secondary"
+                            onClick={() =>
+                              run(async () => {
+                                const d = await api("workspaces/" + workspace, {
+                                  action: "invite",
+                                  email: inviteEmail,
+                                  role: inviteRole,
+                                });
+                                setInviteUrl(d.inviteUrl);
                                 setSettings(
                                   await api("workspaces/" + workspace),
                                 );
                               })
                             }
                           >
-                            Revoke
+                            Create invite link
                           </button>
                         </div>
-                      ))}
-                  </>
-                )}
-              </section>
-              {user && !demo && (
-                <>
-                  <GoogleCalendarSettings />
-                  <CrmSettings />
-                </>
-              )}
-              <section>
-                <h2>Privacy and data</h2>
-                <p className="muted">
-                  Meetings start private. Workspace owners cannot read private
-                  meetings unless they are shared with them.{" "}
-                  {processingMode === "device"
-                    ? "Whisper processes audio in this browser. Only transcripts and notes sync to your account."
-                    : "Processing requires the configured transcription and notes services."}
-                </p>
-                <a href="/privacy">Read the privacy details</a>
-                {user && (
-                  <button
-                    className="danger text-button"
-                    onClick={() => {
-                      setDeleteText("");
-                      setModal("delete-account");
-                    }}
-                  >
-                    Delete my account
-                  </button>
-                )}
-              </section>
-            </div>
-          </>
-        )}
-      </main>
+                        {inviteUrl && (
+                          <label>
+                            Share this link with the invited person
+                            <input
+                              readOnly
+                              value={inviteUrl}
+                              onFocus={(e) => e.target.select()}
+                            />
+                          </label>
+                        )}
+                        {settings.invites
+                          .filter((i: any) => !i.revoked_at && !i.accepted_at)
+                          .map((i: any) => (
+                            <div className="member" key={i.id}>
+                              <span>{i.email}</span>
+                              <button
+                                className="text-button"
+                                onClick={() =>
+                                  run(async () => {
+                                    await api("workspaces/" + workspace, {
+                                      action: "revoke",
+                                      inviteId: i.id,
+                                    });
+                                    setSettings(
+                                      await api("workspaces/" + workspace),
+                                    );
+                                  })
+                                }
+                              >
+                                Revoke
+                              </button>
+                            </div>
+                          ))}
+                      </>
+                    )}
+                  </section>
+                  {user && !demo && (
+                    <>
+                      <GoogleCalendarSettings />
+                      <CrmSettings />
+                    </>
+                  )}
+                  <section>
+                    <h2>Privacy and data</h2>
+                    <p className="muted">
+                      Meetings start private. Workspace owners cannot read
+                      private meetings unless they are shared with them.{" "}
+                      {processingMode === "device"
+                        ? "Whisper processes audio in this browser. Only transcripts and notes sync to your account."
+                        : "Processing requires the configured transcription and notes services."}
+                    </p>
+                    <a href="/privacy">Read the privacy details</a>
+                    {user && (
+                      <button
+                        className="danger text-button"
+                        onClick={() => {
+                          setDeleteText("");
+                          setModal("delete-account");
+                        }}
+                      >
+                        Delete my account
+                      </button>
+                    )}
+                  </section>
+                </div>
+              </>
+            )}
+          </main>
+        </>
+      )}
       {["auth", "reauth"].includes(modal) && (
         <Dialog
           title={
