@@ -46,12 +46,12 @@ export function GoogleCalendarSettings() {
         same.
       </p>
       <p>
-        <strong>Manual recording only.</strong> Selecting an event saves it to
-        your list. It does not join, record, or notify participants. At meeting
-        time, open Meet and start a recording in AutoNote after obtaining
-        participant consent. Choose Meeting tab + microphone in AutoNote to
-        include remote voices, or upload a Google Meet recording that contains
-        all speakers.
+        <strong>AutoNote capture starts manually.</strong> Selecting an event
+        saves it to your list. It does not join, record, or notify participants.
+        At meeting time, open Meet and start a recording in AutoNote after
+        obtaining participant consent. Choose Meeting tab + microphone in
+        AutoNote to include remote voices, or upload a Google Meet recording
+        that contains all speakers.
       </p>
       <details>
         <summary>Use Google Meet’s automatic recording</summary>
@@ -173,14 +173,14 @@ export function GoogleCalendarSettings() {
                 {e.title}
                 <small>
                   {" "}
-                  · {new Date(e.startsAt).toLocaleString()} · manual recording
+                  · {new Date(e.startsAt).toLocaleString()} · saved meeting link
                 </small>
               </span>
             </label>
           ))}
           {!!status.selections.length && (
             <>
-              <h3>Selected for manual recording</h3>
+              <h3>Selected meetings</h3>
               {status.selections.map((s: any) => (
                 <div key={s.event_id} className="identity">
                   <span>

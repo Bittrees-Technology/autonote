@@ -602,6 +602,10 @@ export default function App() {
       stream.current = s;
       try {
         await clearRecording(user!.id);
+        if (s.getAudioTracks().some((track) => track.readyState === "ended"))
+          throw new Error(
+            "Audio sharing ended before recording started. Please try again.",
+          );
         const type = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
           (t) => MediaRecorder.isTypeSupported(t),
         );

@@ -6,7 +6,7 @@
 - Changed OAuth audience from Testing to In production.
 - Google verified the AutoNote branding; published it successfully.
 - Calendar data-access verification is still pending, not approved. Current scope remains calendar.events.readonly only. New users may see Google's unverified-app warning and are subject to Google's unverified user cap.
-- Calendar authorization and empty-state loading passed live. CRM authorization passed live and points to My workspace → AutoNote launch.
+- Calendar authorization, loading, selecting the test event, and removing the selection passed live. CRM authorization passed live and points to My workspace → AutoNote launch.
 - Confirmed native automatic recording controls exist for bobofbuilding@bittrees.io. Created a private, no-guest test event named AutoNote recording setup (private test), September 10, 10:30–11:30 in Calendar's displayed local time, and enabled Record the meeting. No organization-wide defaults changed, no guests invited, no recording started.
 
 ## Calendar scope justification (review submission text)
@@ -47,3 +47,7 @@ Sources:
 - https://developers.google.com/workspace/meet/api/guides/artifacts
 - https://developers.google.com/workspace/meet/media-api/guides/get-started
 - https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
+
+## Validation and current handoff
+
+29 automated tests and the production build passed. The published recording modal was visually inspected. Mixed-source tests cover missing shared audio, denied microphone permission, audio-only output, and releasing tracks. A real two-speaker recording and Whisper transcription still needs a live consented test; no microphone or meeting recording was started during setup. Google branding publication is confirmed. The scope form has the justification entered but requires a YouTube demo link before it can be saved/submitted; the explanation is preserved above.

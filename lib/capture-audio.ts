@@ -66,7 +66,10 @@ export async function captureAudio(
         track.addEventListener(
           "ended",
           () => {
-            if (!closed) onEnded();
+            if (!closed) {
+              onEnded();
+              cleanup();
+            }
           },
           { once: true },
         );
