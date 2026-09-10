@@ -1,0 +1,4 @@
+faster-whisper==1.2.1
+psycopg[binary]==3.2.10
+boto3==1.40.30
+httpx==0.28.1

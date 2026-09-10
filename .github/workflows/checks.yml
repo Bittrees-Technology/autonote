@@ -1,0 +1,41 @@
+name: checks
+on: [push, pull_request]
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: autonote
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: autonote_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Configure isolated tests
+        run: |
+          cat > .env.test <<'VARS'
+          DATABASE_URL=postgresql://autonote:ci-only@127.0.0.1:5432/autonote_test
+          APP_URL=http://127.0.0.1:3050
+          AUTH_SECRET=ci-only-secret-not-used-outside-tests-123456
+          DEV_EMAIL_CONSOLE=true
+          VARS
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'httpx==0.28.1' 'psycopg[binary]==3.2.10' 'boto3==1.40.30'
+      - run: python -m unittest test_notes test_jobs
+        working-directory: workers/transcribe
+        env:
+          DATABASE_URL: postgresql://autonote:ci-only@127.0.0.1:5432/autonote_test

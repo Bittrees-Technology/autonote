@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: autonote
+      POSTGRES_PASSWORD: local-autonote-only
+      POSTGRES_DB: autonote
+    ports: ["127.0.0.1:55450:5432"]
+    volumes: ["autonote_db:/var/lib/postgresql/data"]
+  storage:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: autonote
+      MINIO_ROOT_PASSWORD: local-autonote-storage-only
+      MINIO_API_CORS_ALLOW_ORIGIN: http://127.0.0.1:3050
+    ports: ["127.0.0.1:9050:9000", "127.0.0.1:9051:9001"]
+    volumes: ["autonote_storage:/data"]
+  worker:
+    profiles: ["worker"]
+    build: ./workers/transcribe
+    env_file: .env.local
+    environment:
+      DATABASE_URL: postgresql://autonote:local-autonote-only@postgres:5432/autonote
+      S3_ENDPOINT: http://storage:9000
+    volumes: ["autonote_models:/models"]
+    depends_on: [postgres, storage]
+volumes:
+  autonote_db:
+  autonote_storage:
+  autonote_models:
