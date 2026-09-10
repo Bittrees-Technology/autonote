@@ -330,6 +330,44 @@ test("Google connection is session-bound, single-use and private", async () => {
       )
     ).rows[0];
     assert.ok(!row.refresh_ciphertext.includes("synthetic-refresh"));
+    const cancelled = new URL(
+      (await google.start(req(account.session), uid)).url,
+    ).searchParams.get("state")!;
+    await assert.rejects(
+      google.callback(req(outsider.session), uid, "", cancelled, true),
+    );
+    assert.deepEqual(
+      await google.callback(req(account.session), uid, "", cancelled, true),
+      { ok: true, cancelled: true },
+    );
+    await assert.rejects(
+      google.callback(req(account.session), uid, "", cancelled, true),
+    );
+    assert.equal(calls, 1, "cancellation never exchanges a token");
+    const upcoming = {
+      id: "updated-event",
+      summary: "Updated title",
+      status: "confirmed",
+      start: { dateTime: new Date(Date.now() + 3600000).toISOString() },
+      end: { dateTime: new Date(Date.now() + 7200000).toISOString() },
+      hangoutLink: "https://meet.google.com/abc-defg-hij",
+    };
+    await pool().query(
+      "INSERT INTO google_selections(user_id,event_id,title,meet_url,starts_at,ends_at) VALUES($1,'updated-event','Old title',$2,now(),now()+interval '1 day'),($1,'cancelled-event','Cancelled',$2,now(),now()+interval '1 day')",
+      [uid, upcoming.hangoutLink],
+    );
+    globalThis.fetch = async (input) =>
+      String(input).includes("oauth2.googleapis.com")
+        ? Response.json({ access_token: "synthetic-access" })
+        : Response.json({ items: [upcoming] });
+    assert.equal((await google.events(uid)).events.length, 1);
+    const selected = (await google.status(uid)).selections;
+    assert.equal(
+      selected.length,
+      1,
+      "cancelled selections disappear after a complete refresh",
+    );
+    assert.equal(selected[0].title, "Updated title");
     await deleteAccount(uid);
     assert.equal((await google.status(uid)).connected, false);
   } finally {
@@ -374,6 +412,16 @@ test("CRM publication requires an accepted selection and unchanged reviewed meet
   await assert.rejects(
     crm.preview(uid, { ...selection, actionIds: ["not-accepted"] }),
   );
+  await assert.rejects(
+    crm.preview(uid, { ...selection, summary: "   ", actionIds: [] }),
+  );
+  await pool().query("UPDATE meetings SET notes_stale=true WHERE id=$1", [
+    meetingId,
+  ]);
+  await assert.rejects(crm.preview(uid, selection));
+  await pool().query("UPDATE meetings SET notes_stale=false WHERE id=$1", [
+    meetingId,
+  ]);
   const preview = await crm.preview(uid, selection);
   const fetchOriginal = globalThis.fetch;
   let calls = 0;
@@ -532,4 +580,37 @@ test("free email budget rejects excess sends without consuming the monthly allow
     else process.env.PROCESSING_MODE = original;
     await pool().query("DELETE FROM email_budget");
   }
+});
+
+test("integration callback failures redirect safely and malformed JSON is a client error", async () => {
+  const { GET, POST } = await import("../app/api/[...path]/route");
+  for (const provider of ["google", "crm"]) {
+    const response = await GET(
+      new Request(
+        origin +
+          `/api/integrations/${provider}/callback?code=private-code&state=invalid`,
+      ),
+      {
+        params: Promise.resolve({
+          path: ["integrations", provider, "callback"],
+        }),
+      },
+    );
+    assert.equal(response.status, 303);
+    assert.equal(
+      response.headers.get("location"),
+      origin + "/?integration_error=" + provider,
+    );
+    assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+    assert.equal(response.headers.get("cache-control"), "no-store");
+  }
+  const response = await POST(
+    new Request(origin + "/api/auth/start", {
+      method: "POST",
+      headers: { origin, "content-type": "application/json" },
+      body: "{broken",
+    }),
+    { params: Promise.resolve({ path: ["auth", "start"] }) },
+  );
+  assert.equal(response.status, 400);
 });

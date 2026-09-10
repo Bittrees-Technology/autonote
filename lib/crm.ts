@@ -16,7 +16,9 @@ async function remote(path: string, body: unknown, bearer?: string) {
     },
     body: JSON.stringify(body),
   });
-  const d = await r.json();
+  const d = await r.json().catch(() => ({
+    error: "CRM is temporarily unavailable. Try again shortly.",
+  }));
   if (!r.ok) throw new HttpError(r.status, d.error || "CRM request failed.");
   return d;
 }
@@ -113,9 +115,19 @@ const selection = z.object({
 });
 export async function preview(user: string, input: unknown) {
   const d = selection.parse(input);
+  if (!d.summary.trim() && !d.actionIds.length)
+    throw new HttpError(
+      400,
+      "Choose a summary or at least one accepted action.",
+    );
   const m = await meeting(user, d.meetingId, true);
   if (m.creator_id !== user)
     throw new HttpError(403, "Only the meeting creator can export it to CRM.");
+  if (m.notes_stale)
+    throw new HttpError(
+      409,
+      "The transcript changed. Regenerate and review the notes before publishing.",
+    );
   if (m.version !== d.version)
     throw new HttpError(409, "Meeting changed. Review the latest version.");
   const c = (

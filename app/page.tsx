@@ -8,7 +8,7 @@ import {
 } from "../lib/device-recording";
 import { GoogleCalendarSettings } from "../components/google-calendar";
 import { CrmSettings, CrmPublish } from "../components/crm";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import {
   Activity,
   ArrowDownToLine,
@@ -63,7 +63,9 @@ async function api(
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  const d = await r.json();
+  const d = await r.json().catch(() => ({
+    error: "The service is temporarily unavailable. Please retry.",
+  }));
   if (!r.ok) throw new Error(d.error || "Request failed.");
   return d;
 }
@@ -85,13 +87,21 @@ function Dialog({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const headingId = useId();
   useEffect(() => {
     ref.current?.showModal();
   }, []);
   return (
-    <dialog ref={ref} onCancel={onClose}>
+    <dialog
+      ref={ref}
+      aria-labelledby={headingId}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+    >
       <header>
-        <h2>{title}</h2>
+        <h2 id={headingId}>{title}</h2>
         <button className="icon" aria-label="Close" onClick={onClose}>
           <X size={20} />
         </button>
@@ -102,6 +112,7 @@ function Dialog({
 }
 export default function App() {
   const [user, setUser] = useState<{ id: string; name: string } | null>(null),
+    [pendingInvite, setPendingInvite] = useState(""),
     [identities, setIdentities] = useState<any[]>([]),
     [workspaces, setWorkspaces] = useState<Workspace[]>([]),
     [workspace, setWorkspace] = useState(""),
@@ -165,10 +176,19 @@ export default function App() {
   const list = demo ? [demoData] : meetings;
   const active = list.find((m) => m.id === selected);
   const readOnly = !demo && currentWorkspace?.role === "viewer";
+  const refreshSequence = useRef(0);
   async function refresh(ws = workspace) {
+    const sequence = ++refreshSequence.current;
+    const linkedMeeting = new URLSearchParams(location.search).get("meeting");
     const d = await api(
-      "me" + (ws ? "?workspace=" + encodeURIComponent(ws) : ""),
+      "me" +
+        (ws
+          ? "?workspace=" + encodeURIComponent(ws)
+          : linkedMeeting
+            ? "?meeting=" + encodeURIComponent(linkedMeeting)
+            : ""),
     );
+    if (sequence !== refreshSequence.current) return d;
     setProcessingMode(d.processingMode || "server");
     setUser(d.user);
     if (d.user) {
@@ -178,15 +198,54 @@ export default function App() {
       setWorkspace(d.selected || "");
       setMeetings(d.meetings);
       if (selected === "demo") setSelected(null);
+      if (d.linkUnavailable)
+        setNotice(
+          "That meeting is unavailable or has not been shared with your account.",
+        );
+    } else {
+      setDemo(true);
+      setMeetings([]);
+      setIdentities([]);
+      setWorkspaces([]);
+      setWorkspace("");
+      setAudioUrl("");
+      setSelected("demo");
+      if (user) setNotice("Your session ended. Sign in again to continue.");
     }
     setLoaded(true);
     return d;
   }
   useEffect(() => {
     refresh()
-      .then(() => {
+      .then((d) => {
         const q = new URLSearchParams(location.search);
-        if (q.get("meeting")) setSelected(q.get("meeting"));
+        if (/^[a-f0-9]{64}$/.test(q.get("invite") || ""))
+          setPendingInvite(q.get("invite")!);
+        if (d.user && q.get("meeting") && !d.linkUnavailable)
+          setSelected(q.get("meeting"));
+        if (
+          q.has("connected") ||
+          q.has("google") ||
+          q.has("integration_error")
+        ) {
+          setPage("settings");
+          if (d.user && d.selected)
+            api("workspaces/" + d.selected)
+              .then((v) => {
+                setSettings(v);
+                setWorkspaceName(
+                  d.workspaces.find((w: Workspace) => w.id === d.selected)
+                    ?.name || "",
+                );
+              })
+              .catch((e) => setError(e.message));
+        }
+        if (["google", "crm"].includes(q.get("integration_error") || "")) {
+          setError(
+            "The connection could not be completed. It may have expired or been cancelled. Sign in and start again from Settings.",
+          );
+          history.replaceState(null, "", "/");
+        }
         if (q.get("connected") === "google" || q.has("google")) {
           setNotice(
             q.has("google")
@@ -206,15 +265,27 @@ export default function App() {
         setLoaded(true);
         setNotice(e.message);
       });
-    recordedChunks()
-      .then((c) => setRecoverable(c.length > 0))
-      .catch(() => {});
     return () => {
       deviceAbort.current?.abort();
       abort.current?.abort();
       stream.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
+  useEffect(() => {
+    let current = true;
+    setRecoverable(false);
+    setFile(null);
+    setSavedRecording(false);
+    if (user && !demo)
+      recordedChunks(user.id)
+        .then((chunks) => {
+          if (current) setRecoverable(chunks.length > 0);
+        })
+        .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [user?.id, demo]);
   useEffect(() => {
     if (user && !demo)
       localRecordings(user.id)
@@ -283,7 +354,9 @@ export default function App() {
       setModal("recovery");
       return;
     }
-    await refresh();
+    const restored = await refresh();
+    const link = new URLSearchParams(location.search).get("meeting");
+    if (link && !restored.linkUnavailable) setSelected(link);
     setModal("");
     setNotice("You are signed in. Your meetings are private by default.");
   }
@@ -408,7 +481,7 @@ export default function App() {
       await api(`meetings/${id}/complete`, {});
       localStorage.removeItem(key);
       if (savedRecording) {
-        await clearRecording();
+        await clearRecording(user!.id);
         setRecoverable(false);
         setSavedRecording(false);
       }
@@ -483,7 +556,7 @@ export default function App() {
       });
       await storeRecording({ ...local, saved: true });
       if (savedRecording) {
-        await clearRecording();
+        await clearRecording(user!.id);
         setRecoverable(false);
         setSavedRecording(false);
       }
@@ -510,7 +583,7 @@ export default function App() {
         throw new Error(
           "Recording is not supported in this browser. Upload an audio file instead.",
         );
-      await clearRecording();
+      await clearRecording(user!.id);
       const s = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.current = s;
       const type = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
@@ -523,7 +596,7 @@ export default function App() {
       r.ondataavailable = (e) => {
         if (e.data.size)
           saveChain.current = saveChain.current
-            .then(() => saveChunk(e.data))
+            .then(() => saveChunk(user!.id, e.data))
             .catch(() => {
               saveFailed.current = true;
               setError(
@@ -536,7 +609,21 @@ export default function App() {
         s.getTracks().forEach((t) => t.stop());
         setRecording(false);
         await saveChain.current;
-        const chunks = await recordedChunks();
+        let chunks: Blob[];
+        try {
+          chunks = await recordedChunks(user!.id);
+        } catch {
+          setError(
+            "Saved audio could not be opened. Keep browser data intact and retry recovery.",
+          );
+          return;
+        }
+        if (!chunks.length) {
+          setError(
+            "No audio was captured. Check microphone permissions and try again.",
+          );
+          return;
+        }
         setRecoverable(chunks.length > 0);
         const b = new Blob(chunks, { type: r.mimeType });
         setFile(
@@ -546,7 +633,8 @@ export default function App() {
             {
               type: r.mimeType.split(";")[0],
               lastModified: Number(
-                localStorage.getItem("autonote-recording-start") || 0,
+                localStorage.getItem("autonote-recording-start-" + user!.id) ||
+                  0,
               ),
             },
           ),
@@ -555,9 +643,16 @@ export default function App() {
         if (saveFailed.current)
           setNotice("Only the saved portion of this recording is available.");
       };
-      r.onerror = () =>
+      r.onerror = () => {
         setError("Recording was interrupted. Recover saved audio below.");
-      localStorage.setItem("autonote-recording-start", String(Date.now()));
+        s.getTracks().forEach((track) => track.stop());
+        if (r.state !== "inactive") r.stop();
+        setRecording(false);
+      };
+      localStorage.setItem(
+        "autonote-recording-start-" + user!.id,
+        String(Date.now()),
+      );
       r.start(2000);
       setRecording(true);
       setElapsed(0);
@@ -569,14 +664,14 @@ export default function App() {
   }
   async function recoverRecording() {
     await run(async () => {
-      const chunks = await recordedChunks();
+      const chunks = await recordedChunks(user!.id);
       if (!chunks.length) throw new Error("No saved audio was found.");
       const b = new Blob(chunks, { type: chunks[0].type || "audio/webm" });
       setFile(
         new File([b], b.type.includes("mp4") ? "meeting.m4a" : "meeting.webm", {
           type: b.type.split(";")[0],
           lastModified: Number(
-            localStorage.getItem("autonote-recording-start") || 0,
+            localStorage.getItem("autonote-recording-start-" + user!.id) || 0,
           ),
         }),
       );
@@ -900,7 +995,13 @@ export default function App() {
               onClick={() =>
                 run(async () => {
                   await api("auth/logout", {});
+                  ++refreshSequence.current;
                   setUser(null);
+                  setMeetings([]);
+                  setIdentities([]);
+                  setWorkspaces([]);
+                  setWorkspace("");
+                  setSettings(null);
                   setAudioUrl("");
                   setDeviceFiles([]);
                   setDemo(true);
@@ -940,6 +1041,35 @@ export default function App() {
             </span>
             <button onClick={() => signIn()}>
               Use AutoNote <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+        {pendingInvite && (
+          <div className="message">
+            <span>
+              A workspace invitation is ready. Use the email address it was sent
+              to.
+            </span>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() =>
+                user
+                  ? run(async () => {
+                      const result = await api("invites", {
+                        token: pendingInvite,
+                      });
+                      history.replaceState(null, "", "/");
+                      setPendingInvite("");
+                      await refresh(result.workspaceId);
+                      setSelected(null);
+                      setPage("meetings");
+                      setNotice("Invitation accepted.");
+                    })
+                  : signIn()
+              }
+            >
+              {user ? "Accept invitation" : "Sign in to accept"}
             </button>
           </div>
         )}
@@ -1053,6 +1183,7 @@ export default function App() {
                   <label className="search">
                     <Search size={18} />
                     <input
+                      aria-label="Search meetings and transcripts"
                       placeholder="Search meetings and transcripts"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
@@ -1826,29 +1957,6 @@ export default function App() {
                       ))}
                   </>
                 )}
-                {user && (
-                  <button
-                    className="text-button"
-                    onClick={() =>
-                      run(async () => {
-                        const token = new URLSearchParams(location.search).get(
-                          "invite",
-                        );
-                        if (!token)
-                          throw new Error(
-                            "Open the invite link you received, then accept it here.",
-                          );
-                        const d = await api("invites", { token });
-                        history.replaceState(null, "", "/");
-                        await refresh(d.workspaceId);
-                        setNotice("Invitation accepted.");
-                        setPage("meetings");
-                      })
-                    }
-                  >
-                    Accept invitation from this page’s link
-                  </button>
-                )}
               </section>
               {user && !demo && (
                 <>
@@ -2376,7 +2484,7 @@ export default function App() {
             className="danger-button full"
             onClick={() =>
               run(async () => {
-                await clearRecording();
+                await clearRecording(user!.id);
                 setRecoverable(false);
                 setFile(null);
                 setSavedRecording(false);
@@ -2450,7 +2558,7 @@ export default function App() {
                 if (user)
                   for (const local of await localRecordings(user.id))
                     await forgetRecording(local.key);
-                await clearRecording();
+                await clearRecording(user!.id);
                 setRecoverable(false);
                 setDeviceFiles([]);
                 setUser(null);

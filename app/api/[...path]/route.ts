@@ -64,7 +64,11 @@ async function handle(
       const raw = await req.text();
       if (raw.length > 750_000)
         throw new HttpError(413, "Request is too large.");
-      data = JSON.parse(raw);
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new HttpError(400, "The request contains invalid JSON.");
+      }
     }
     if (path.join("/") === "health")
       return json({
@@ -128,8 +132,24 @@ async function handle(
           user: null,
           processingMode: process.env.PROCESSING_MODE || "server",
         });
+      let selectedWorkspace = url.searchParams.get("workspace") || undefined;
+      let linkUnavailable = false;
+      const linkedMeeting = url.searchParams.get("meeting");
+      if (!selectedWorkspace && linkedMeeting) {
+        if (!z.uuid().safeParse(linkedMeeting).success) linkUnavailable = true;
+        else
+          try {
+            selectedWorkspace = (await service.meeting(user.id, linkedMeeting))
+              .workspace_id;
+          } catch (e) {
+            if (e instanceof HttpError && [403, 404].includes(e.status))
+              linkUnavailable = true;
+            else throw e;
+          }
+      }
       return json({
         user,
+        linkUnavailable,
         processingMode: process.env.PROCESSING_MODE || "server",
         identities: (
           await pool().query(
@@ -139,7 +159,7 @@ async function handle(
         ).rows,
         ...(await service.snapshot(
           user.id,
-          url.searchParams.get("workspace") || undefined,
+          selectedWorkspace,
           url.searchParams.get("q") || "",
         )),
       });
@@ -149,19 +169,18 @@ async function handle(
     if (path[0] === "integrations" && path[1] === "google") {
       await rateLimit(`google:${u.id}`, 60);
       if (path[2] === "callback" && method === "GET") {
-        if (url.searchParams.has("error"))
-          return Response.redirect(
-            new URL("/?google=cancelled", process.env.APP_URL!),
-            303,
-          );
-        await google.callback(
+        const result = await google.callback(
           req,
           u.id,
           url.searchParams.get("code") || "",
           url.searchParams.get("state") || "",
+          url.searchParams.has("error"),
         );
         return Response.redirect(
-          new URL("/?connected=google", process.env.APP_URL!),
+          new URL(
+            result.cancelled ? "/?google=cancelled" : "/?connected=google",
+            process.env.APP_URL!,
+          ),
           303,
         );
       }
@@ -281,6 +300,23 @@ async function handle(
     }
     throw new HttpError(404, "Not found.");
   } catch (e) {
+    const callback =
+      req.method === "GET" &&
+      new URL(req.url).pathname.match(
+        /^\/api\/integrations\/(google|crm)\/callback$/,
+      );
+    if (callback && process.env.APP_URL) {
+      const destination = new URL("/", process.env.APP_URL);
+      destination.searchParams.set("integration_error", callback[1]);
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: destination.href,
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer",
+        },
+      });
+    }
     if (e instanceof ZodError)
       return jsonError(
         400,

@@ -7,7 +7,9 @@ async function api(path: string, body?: unknown) {
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  const d = await r.json();
+  const d = await r.json().catch(() => ({
+    error: "Google Calendar is temporarily unavailable. Try again shortly.",
+  }));
   if (!r.ok) throw new Error(d.error);
   return d;
 }
@@ -52,9 +54,16 @@ export function GoogleCalendarSettings() {
         participant consent that contains all speakers.
       </p>
       {!status ? (
-        <p>Checking connection…</p>
+        <p role="status">
+          {error
+            ? "Connection status could not be loaded."
+            : "Checking connection…"}
+        </p>
       ) : !status.configured ? (
-        <p>Google connection is awaiting administrator setup.</p>
+        <p className="message">
+          Google Calendar is not available yet. You can record or import a
+          meeting without connecting Google.
+        </p>
       ) : !status.connected ? (
         <button
           className="secondary"
@@ -80,7 +89,11 @@ export function GoogleCalendarSettings() {
               })
             }
           >
-            Load upcoming meetings
+            {busy
+              ? "Please wait…"
+              : loaded
+                ? "Refresh meetings"
+                : "Load upcoming meetings"}
           </button>{" "}
           <button
             className="text-button"
@@ -97,13 +110,14 @@ export function GoogleCalendarSettings() {
             Disconnect Google
           </button>
           <p className="fine">
-            Next 14 days · first 100 calendar events · reload to check changes
-            or cancellations.
+            Next 14 days · up to 20 selected meetings · refresh to update saved
+            titles, times, and cancellations.
           </p>
           {truncated && (
             <p>
               Only the first 100 calendar events were checked. Later meetings
-              may be missing.
+              may be missing, and saved events outside this page could be out of
+              date.
             </p>
           )}
           {loaded && !events.length && (
@@ -176,6 +190,11 @@ export function GoogleCalendarSettings() {
         <p role="alert" className="inline-error">
           {error}
         </p>
+      )}
+      {!status && error && (
+        <button className="secondary" disabled={busy} onClick={() => run(load)}>
+          Try again
+        </button>
       )}
     </section>
   );
