@@ -6,6 +6,7 @@ import {
   transcribeOnDevice,
   type LocalRecording,
 } from "../lib/device-recording";
+import { captureAudio } from "../lib/capture-audio";
 import { Landing } from "../components/landing";
 import { GoogleCalendarSettings } from "../components/google-calendar";
 import { CrmSettings, CrmPublish } from "../components/crm";
@@ -148,6 +149,10 @@ export default function App() {
     [elapsed, setElapsed] = useState(0),
     [savedRecording, setSavedRecording] = useState(false),
     [recoverable, setRecoverable] = useState(false);
+  const [captureMode, setCaptureMode] = useState<"microphone" | "meeting">(
+    "microphone",
+  );
+  const captureCleanup = useRef<(() => void) | null>(null);
   const recorder = useRef<MediaRecorder | null>(null),
     saveChain = useRef(Promise.resolve()),
     saveFailed = useRef(false),
@@ -270,6 +275,7 @@ export default function App() {
     return () => {
       deviceAbort.current?.abort();
       abort.current?.abort();
+      captureCleanup.current?.();
       stream.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
@@ -585,80 +591,93 @@ export default function App() {
         throw new Error(
           "Recording is not supported in this browser. Upload an audio file instead.",
         );
-      await clearRecording(user!.id);
-      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.current = s;
-      const type = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
-        (t) => MediaRecorder.isTypeSupported(t),
-      );
-      const r = new MediaRecorder(s, type ? { mimeType: type } : undefined);
-      recorder.current = r;
-      saveChain.current = Promise.resolve();
-      saveFailed.current = false;
-      r.ondataavailable = (e) => {
-        if (e.data.size)
-          saveChain.current = saveChain.current
-            .then(() => saveChunk(user!.id, e.data))
-            .catch(() => {
-              saveFailed.current = true;
-              setError(
-                "Device storage is full or unavailable. Stop recording and recover the saved audio.",
-              );
-              r.state !== "inactive" && r.stop();
-            });
-      };
-      r.onstop = async () => {
-        s.getTracks().forEach((t) => t.stop());
-        setRecording(false);
-        await saveChain.current;
-        let chunks: Blob[];
-        try {
-          chunks = await recordedChunks(user!.id);
-        } catch {
-          setError(
-            "Saved audio could not be opened. Keep browser data intact and retry recovery.",
-          );
-          return;
-        }
-        if (!chunks.length) {
-          setError(
-            "No audio was captured. Check microphone permissions and try again.",
-          );
-          return;
-        }
-        setRecoverable(chunks.length > 0);
-        const b = new Blob(chunks, { type: r.mimeType });
-        setFile(
-          new File(
-            [b],
-            r.mimeType.includes("mp4") ? "meeting.m4a" : "meeting.webm",
-            {
-              type: r.mimeType.split(";")[0],
-              lastModified: Number(
-                localStorage.getItem("autonote-recording-start-" + user!.id) ||
-                  0,
-              ),
-            },
-          ),
+      const capture = await captureAudio(captureMode, () => {
+        setNotice(
+          "Audio sharing ended. The captured portion is saved on this device.",
         );
-        setSavedRecording(true);
-        if (saveFailed.current)
-          setNotice("Only the saved portion of this recording is available.");
-      };
-      r.onerror = () => {
-        setError("Recording was interrupted. Recover saved audio below.");
-        s.getTracks().forEach((track) => track.stop());
-        if (r.state !== "inactive") r.stop();
-        setRecording(false);
-      };
-      localStorage.setItem(
-        "autonote-recording-start-" + user!.id,
-        String(Date.now()),
-      );
-      r.start(2000);
-      setRecording(true);
-      setElapsed(0);
-      setPaused(false);
+        stopRecording();
+      });
+      captureCleanup.current = capture.cleanup;
+      const s = capture.stream;
+      stream.current = s;
+      try {
+        await clearRecording(user!.id);
+        const type = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
+          (t) => MediaRecorder.isTypeSupported(t),
+        );
+        const r = new MediaRecorder(s, type ? { mimeType: type } : undefined);
+        recorder.current = r;
+        saveChain.current = Promise.resolve();
+        saveFailed.current = false;
+        r.ondataavailable = (e) => {
+          if (e.data.size)
+            saveChain.current = saveChain.current
+              .then(() => saveChunk(user!.id, e.data))
+              .catch(() => {
+                saveFailed.current = true;
+                setError(
+                  "Device storage is full or unavailable. Stop recording and recover the saved audio.",
+                );
+                r.state !== "inactive" && r.stop();
+              });
+        };
+        r.onstop = async () => {
+          capture.cleanup();
+          setRecording(false);
+          await saveChain.current;
+          let chunks: Blob[];
+          try {
+            chunks = await recordedChunks(user!.id);
+          } catch {
+            setError(
+              "Saved audio could not be opened. Keep browser data intact and retry recovery.",
+            );
+            return;
+          }
+          if (!chunks.length) {
+            setError(
+              "No audio was captured. Check microphone permissions and try again.",
+            );
+            return;
+          }
+          setRecoverable(chunks.length > 0);
+          const b = new Blob(chunks, { type: r.mimeType });
+          setFile(
+            new File(
+              [b],
+              r.mimeType.includes("mp4") ? "meeting.m4a" : "meeting.webm",
+              {
+                type: r.mimeType.split(";")[0],
+                lastModified: Number(
+                  localStorage.getItem(
+                    "autonote-recording-start-" + user!.id,
+                  ) || 0,
+                ),
+              },
+            ),
+          );
+          setSavedRecording(true);
+          if (saveFailed.current)
+            setNotice("Only the saved portion of this recording is available.");
+        };
+        r.onerror = () => {
+          setError("Recording was interrupted. Recover saved audio below.");
+          capture.cleanup();
+          if (r.state !== "inactive") r.stop();
+          setRecording(false);
+        };
+        localStorage.setItem(
+          "autonote-recording-start-" + user!.id,
+          String(Date.now()),
+        );
+        r.start(2000);
+        setRecording(true);
+        setElapsed(0);
+        setPaused(false);
+      } catch (error) {
+        capture.cleanup();
+        throw error;
+      }
     });
   }
   function stopRecording() {
@@ -2276,9 +2295,30 @@ export default function App() {
             </label>
           ) : (
             <>
+              <label>
+                Audio source
+                <select
+                  value={captureMode}
+                  disabled={recording || busy || !!file}
+                  onChange={(e) =>
+                    setCaptureMode(e.target.value as "microphone" | "meeting")
+                  }
+                >
+                  <option value="microphone">
+                    Microphone only · in-person conversations
+                  </option>
+                  <option value="meeting">
+                    Meeting tab + microphone · online meetings
+                  </option>
+                </select>
+              </label>
               <p className="fine">
-                Captures your microphone. Remote voices in headphones are not
-                included. Keep this page open while recording.
+                {captureMode === "meeting"
+                  ? "Use desktop Chrome or Edge. Choose your Meet tab and enable Share tab audio, then allow your microphone. Use headphones to avoid echo. Only audio is saved; the browser also requests tab video permission to enable sharing."
+                  : "Captures your microphone only. Remote voices in headphones are not included."}{" "}
+                Keep AutoNote and the meeting tab open. Recording starts with
+                your click, never automatically. Stop, then transcribe and
+                review your notes.
               </p>
               {recording ? (
                 <div className="record-controls">

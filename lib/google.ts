@@ -230,7 +230,7 @@ export async function status(user: string) {
   );
   return {
     configured: configured(),
-    testing: process.env.GOOGLE_OAUTH_TESTING === "true",
+    verificationPending: process.env.GOOGLE_OAUTH_VERIFIED !== "true",
     connected: !!c.rowCount,
     captureAvailable: false,
     selections: (

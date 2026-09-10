@@ -225,7 +225,7 @@ export function Landing({
             <summary>Does AutoNote join Google Meet?</summary>
             <p>
               No. Recording is manual. Google Calendar connection is available
-              to invited pilot accounts while Google verification is pending.
+              subject to Google’s access limits while verification is pending.
               Microphone recording does not capture remote voices in headphones;
               upload a recording containing all speakers when needed.
             </p>

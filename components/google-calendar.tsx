@@ -49,14 +49,35 @@ export function GoogleCalendarSettings() {
         <strong>Manual recording only.</strong> Selecting an event saves it to
         your list. It does not join, record, or notify participants. At meeting
         time, open Meet and start a recording in AutoNote after obtaining
-        participant consent. Microphone recording does not capture remote voices
-        in headphones. To include everyone, upload a recording made with
-        participant consent that contains all speakers.
+        participant consent. Choose Meeting tab + microphone in AutoNote to
+        include remote voices, or upload a Google Meet recording that contains
+        all speakers.
       </p>
-      {status?.configured && status.testing && (
+      <details>
+        <summary>Use Google Meet’s automatic recording</summary>
+        <p>
+          If your Workspace plan includes recording and you host the meeting,
+          open its Google Calendar event, choose Video call options → Meeting
+          records, and enable Record the meeting. Recording starts when the host
+          or co-host joins on the web, and Google notifies participants.
+        </p>
+        <p>
+          After the meeting, download the recording from Google Drive and choose
+          Upload in AutoNote. The free beta accepts up to 100 MB / 30 minutes.
+          Automatic Drive import is not connected yet.
+        </p>
+        <a
+          href="https://support.google.com/meet/answer/9308681?hl=en"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Google recording instructions
+        </a>
+      </details>
+      {status?.configured && status.verificationPending && (
         <p className="message">
-          Google Calendar is in a limited pilot. Only Google accounts added to
-          the test list can connect. You may need to reconnect during testing.
+          Google verification is pending. Google may show an unverified-app
+          warning or limit new connections until its review is complete.
           Recording and uploads work without Google.
         </p>
       )}

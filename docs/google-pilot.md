@@ -2,6 +2,8 @@
 
 Configured September 10, 2026 under bobofbuilding@bittrees.io.
 
+Update: the audience is now In production and Google has verified and published the branding. Calendar data-access review is still pending. See [current verification status and rollout](google-verification.md); the testing details below describe the original pilot setup.
+
 - Google Cloud project: bittrees-autonote (423041682990), organization bittrees.io.
 - Calendar API enabled; OAuth consent app AutoNote, External / Testing.
 - Production web client uses only https://autonote.bittrees.org/api/integrations/google/callback. No JavaScript origins or local/preview callbacks.

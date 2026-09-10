@@ -32,6 +32,15 @@ export default function Privacy() {
         important recordings: browser storage can be cleared or evicted. Other
         devices and people you share with do not receive audio.
       </p>
+      <p>
+        Meeting tab capture combines the audio from your selected browser tab
+        with your microphone. The browser requests tab-sharing permission,
+        including video permission, but AutoNote records only audio. Stopping
+        sharing stops capture. If you use Google Meet’s native recording
+        instead, Google stores that recording in the organizer’s Drive under
+        your Workspace settings; AutoNote does not automatically access or
+        import it.
+      </p>
       <h2>What is saved online?</h2>
       <p>
         Your account stores your verified email or wallet address, workspace
@@ -79,13 +88,14 @@ export default function Privacy() {
       </p>
       <h2>Optional connections</h2>
       <p>
-        Google Calendar is optional and currently limited to invited pilot
-        accounts. Connecting grants read-only access to calendar events;
-        AutoNote reads upcoming events from your primary calendar to show Google
-        Meet choices. Only selected events’ title, time, and Meet link are
-        saved. Selecting an event does not start recording or send a bot. Saved
-        selections expire in daily cleanup after the event ends. Disconnecting
-        removes saved selections and revokes access.
+        Google Calendar is optional. Google verification is pending and Google
+        may display warnings or limit new connections. Connecting grants
+        read-only access to calendar events; AutoNote reads upcoming events from
+        your primary calendar to show Google Meet choices. Only selected events’
+        title, time, and Meet link are saved. Selecting an event does not start
+        recording or send a bot. Saved selections expire in daily cleanup after
+        the event ends. Disconnecting removes saved selections and revokes
+        access.
       </p>
       <p>
         Bittrees CRM publication requires your review and confirmation of a
@@ -112,8 +122,10 @@ export default function Privacy() {
           AutoNote support on GitHub
         </a>
         . Issues are public: do not include meeting content, account secrets, or
-        personal information. A dedicated private support mailbox is not yet
-        available.
+        personal information. For private account or privacy requests, contact
+        our Google app support address:{" "}
+        <a href="mailto:bobofbuilding@bittrees.io">bobofbuilding@bittrees.io</a>
+        .
       </p>
       <p>
         <a href="https://neon.com/pricing">Neon restore limits</a> ·{" "}
