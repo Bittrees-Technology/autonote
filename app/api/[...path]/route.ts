@@ -1,3 +1,6 @@
+import { timingSafeEqual } from "node:crypto";
+import { cleanup } from "../../../lib/maintenance";
+import { saveDeviceMeeting } from "../../../lib/device-service";
 import * as google from "../../../lib/google";
 import * as crm from "../../../lib/crm";
 import { z, ZodError } from "zod";
@@ -42,19 +45,37 @@ async function handle(
         "AutoNote is in preview. Account and recording services are awaiting production setup. You can explore the fictional demo.",
       );
     const url = new URL(req.url);
+    if (path.join("/") === "cron/cleanup" && method === "GET") {
+      const expected = process.env.CRON_SECRET,
+        actual = req.headers.get("authorization") || "";
+      if (
+        !expected ||
+        actual.length !== ("Bearer " + expected).length ||
+        !timingSafeEqual(Buffer.from(actual), Buffer.from("Bearer " + expected))
+      )
+        throw new HttpError(401, "Not authorized.");
+      return json(await cleanup());
+    }
     if (method !== "GET") checkOrigin(req);
     let data: any = {};
     if (method !== "GET") {
       if (Number(req.headers.get("content-length") || 0) > 3_500_000)
         throw new HttpError(413, "Request is too large.");
-      data = await req.json();
+      const raw = await req.text();
+      if (raw.length > 750_000)
+        throw new HttpError(413, "Request is too large.");
+      data = JSON.parse(raw);
     }
     if (path.join("/") === "health")
       return json({
         ok: true,
         configured: !demoMode && !!process.env.DATABASE_URL,
         mode: demoMode ? "demo" : "live",
-        storage: !!process.env.S3_BUCKET,
+        processingMode: process.env.PROCESSING_MODE || "server",
+        storage:
+          process.env.PROCESSING_MODE === "device"
+            ? "browser"
+            : !!process.env.S3_BUCKET,
       });
     if (!process.env.DATABASE_URL)
       throw new HttpError(
@@ -102,9 +123,14 @@ async function handle(
     }
     const user = await currentUser(req, path[0] !== "me");
     if (path[0] === "me") {
-      if (!user) return json({ user: null });
+      if (!user)
+        return json({
+          user: null,
+          processingMode: process.env.PROCESSING_MODE || "server",
+        });
       return json({
         user,
+        processingMode: process.env.PROCESSING_MODE || "server",
         identities: (
           await pool().query(
             "SELECT kind,value FROM identities WHERE user_id=$1",
@@ -199,7 +225,21 @@ async function handle(
         setCookie(cookieName, "", 0),
       );
     }
+    if (path.join("/") === "device/meetings" && method === "POST") {
+      if (process.env.PROCESSING_MODE !== "device")
+        throw new HttpError(404, "Device processing is not enabled.");
+      return json(await saveDeviceMeeting(u.id, data));
+    }
     if (path[0] === "meetings") {
+      if (
+        process.env.PROCESSING_MODE === "device" &&
+        method === "POST" &&
+        (path.length === 1 || ["parts", "complete"].includes(path[2]))
+      )
+        throw new HttpError(
+          400,
+          "This deployment processes recordings on your device.",
+        );
       if (path.length === 1 && method === "POST")
         return json(await service.createMeeting(u.id, data));
       const id = path[1];

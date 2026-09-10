@@ -1,22 +1,25 @@
 # AutoNote by Bittrees
 
-**[Explore the fictional demo](https://autonote-gamma.vercel.app)** · [GitHub](https://github.com/Bittrees-Technology/autonote)
+**[Open AutoNote](https://autonote.bittrees.org)** · [GitHub](https://github.com/Bittrees-Technology/autonote)
 
 An MIT-licensed meeting workspace: record or upload, transcribe with Whisper, review notes and actions, and share deliberately.
 
-**Release status:** implementation beta. The core pipeline runs locally; public deployment requires separately configured PostgreSQL, private object storage, email delivery, a worker, and a notes model. A Vercel deployment without these services is a clearly labeled fictional demo, not an operational recording service.
+**Release status:** free on-device beta. The hosted app runs Whisper in your browser; audio stays on the device. Only transcripts and editable, quoted highlights are synced. No paid inference service or recording storage is required for this mode.
 
 ## Included
 
-- CRM-derived email-code and Ethereum EOA sign-in, verified identity linking, reviewed account recovery, rotating sessions, and multiple workspaces.
-- Owner/editor/viewer roles, email-bound invitation links, private meetings, workspace sharing, and selected-member grants.
-- Browser microphone recording with IndexedDB recovery, pause/stop, local downloads, and direct resumable multipart uploads (1 GB / 2-hour limits).
-- Separate Python worker with faster-whisper, VAD, durable PostgreSQL jobs, leases, heartbeats, retries, and deletion fencing.
-- A configurable chat-completions-compatible notes model, structured output validation, source references, proposed actions, and preservation of reviewed actions when regenerating.
-- Editable timestamped transcripts, notes, action owners/status/dates; audio seeking; library search and filtering; Markdown, text, JSON, SRT, and WebVTT export.
-- Recording retention, account export/deletion, asynchronous content cleanup, and a fictional demo.
+- CRM-style email-code and Ethereum EOA sign-in, verified identity linking, reviewed recovery, and workspaces.
+- Owner/editor/viewer roles, email-bound invitations, private meetings and selected-member or workspace sharing.
+- Browser microphone recording, pause/stop, local recovery and downloads; importing supported audio/video files.
+- Quantized Whisper base in a browser worker, local playback, cancellation, and resumable transcript saving.
+- Quoted highlights and action candidates with source references. No inferred owners or deadlines and no generated recommendations in this mode.
+- Editable timestamped transcripts, notes and action status; Markdown, text, JSON, SRT and WebVTT exports.
+- Immediate device-meeting content deletion and account export/deletion.
+- Optional reviewed Bittrees CRM publication. Google Calendar selection is implemented but requires OAuth configuration.
 
-Whisper handles transcription; the notes model is a separate service. Speaker diarization is optional and must be installed/configured separately; default transcripts show **Unlabeled speaker**, which users can rename. This avoids claiming all speech belongs to one person.
+Free hosted beta limits: 50 active accounts, 20 active meetings per account, 100 MB / 30 minutes per recording, and bounded shared database/email allowances. Desktop Chromium is the initial tested browser. English is primary; Portuguese is experimental. Keep the tab open during transcription. The first run downloads the speech model; processing speed depends on the device. Back up important recordings and exports yourself.
+
+Speaker labels are **Unlabeled speaker** until manually edited. This release does not perform diarization or automatically record Google Meet. Microphone capture does not reliably include remote participants heard through headphones; import a consented recording that contains all speakers.
 
 ## Local setup
 
@@ -51,15 +54,15 @@ No audio or credentials belong in source control. Browser microphone, interrupte
 
 ## Deployment
 
-Vercel runs the Next.js web app and short API requests. It does not run the transcription worker. Deploy the Python container to a separate CPU/GPU host with outbound access to the database, bucket, model repository, and configured notes endpoint. Use pooled PostgreSQL for web requests and a direct or session-compatible connection for the worker.
+The hosted device mode requires PostgreSQL, a new AUTH_SECRET, verified Resend sender, `PROCESSING_MODE=device`, `AUTONOTE_MODE=live`, and `APP_URL=https://autonote.bittrees.org`. Set a separate CRON_SECRET for daily housekeeping. Apply the database migration before deploying. Keep preview and production databases and secrets separate. Neither S3 nor the Python worker is used by device mode.
 
-Set production `APP_URL=https://autonote.bittrees.org`, a unique auth secret, verified Resend sender, private S3 configuration, and database URL in Vercel. Configure worker variables separately. Do not use local MinIO credentials, console email, or a developer machine as the production worker. Apply the database migration explicitly before release; requests do not auto-migrate.
+The original self-hosted server mode remains available (`PROCESSING_MODE=server`) using private S3-compatible storage, the Python faster-whisper worker, and an explicitly configured notes provider. Their operating costs and quality checks are the self-hosting operator's responsibility.
 
-Use separate preview and production resources. The production launch sequence, unresolved operating choices, and rollback/restore procedures are in [the launch guide](docs/launch.md).
+See [launch status and operations](docs/launch.md). `AUTONOTE_SMOKE_URL=https://your-deployment npx tsx scripts/device-smoke.ts` runs an explicitly targeted synthetic API check and deletes its own temporary accounts. Browser Whisper inference must also be checked with a fictional audio file.
 
 ## Scope boundaries
 
-This release implements matching CRM sign-in behavior, not cross-application SSO. CRM synchronization, calendar connections, meeting bots, browser tab/system audio, native clients, live coaching, semantic cross-meeting Q&A, and hosted billing are later milestones. Microphone capture does not reliably include remote participants heard through headphones.
+This release matches CRM sign-in behavior, not shared SSO. Unattended meeting bots, full tab/system audio, native clients, live coaching, generated recommendations, and semantic Q&A remain future work. No paid resources should be added without approval.
 
 The meeting library currently loads the latest 200 visible meetings and searches that set in the interface; the API also supports permission-filtered full-text queries. This is suitable for the initial pilot. Pagination is required before wider usage.
 

@@ -1,3 +1,4 @@
+import { reserveEmail } from "./maintenance";
 import {
   createHash,
   createHmac,
@@ -93,6 +94,10 @@ export async function startChallenge(
   let value = body.value.trim().toLowerCase(),
     payload = "",
     secret = "";
+  const clientIp = process.env.VERCEL
+    ? req.headers.get("x-vercel-forwarded-for") || "unknown"
+    : "local";
+  await rateLimit("auth-ip:" + clientIp, 30);
   await rateLimit("identity:" + body.kind + ":" + value, 5);
   if (body.recoveryToken) {
     if (!user)
@@ -167,6 +172,7 @@ export async function startChallenge(
   );
   if (body.kind === "email") {
     if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+      await reserveEmail();
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         signal: AbortSignal.timeout(10000),
@@ -300,6 +306,21 @@ export async function verifyChallenge(
     }
     let userId = c.user_id || existing?.user_id;
     if (!userId) {
+      if (process.env.PROCESSING_MODE === "device") {
+        await db.query("SELECT pg_advisory_xact_lock(810031)");
+        const count = Number(
+          (
+            await db.query(
+              "SELECT count(*) n FROM users WHERE merged_into IS NULL",
+            )
+          ).rows[0].n,
+        );
+        if (count >= 50)
+          throw new HttpError(
+            503,
+            "The free beta is limited to 50 accounts and is currently full. Existing users can still sign in.",
+          );
+      }
       userId = randomUUID();
       const workspaceId = randomUUID();
       await db.query("INSERT INTO users(id,name) VALUES($1,$2)", [

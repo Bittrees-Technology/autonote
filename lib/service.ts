@@ -1,3 +1,4 @@
+import { extractiveNotes } from "./extractive-notes";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { pool, transaction } from "./db";
@@ -13,7 +14,7 @@ import type { PoolClient } from "pg";
 const uuid = z.uuid();
 const title = z.string().trim().min(1).max(200);
 const publicColumns =
-  "m.id,m.workspace_id,m.creator_id,m.title,m.status,m.visibility,m.language,m.duration,m.created_at,m.version,m.transcript,m.notes,m.notes_stale,m.error,m.recording_deleted";
+  "m.id,m.workspace_id,m.creator_id,m.title,m.status,m.visibility,m.language,m.duration,m.created_at,m.version,m.transcript,m.notes,m.notes_stale,m.error,m.recording_deleted,m.processing_mode";
 export async function member(user: string, workspace: string, db = pool()) {
   const row = (
     await db.query(
@@ -250,10 +251,31 @@ export async function editMeeting(user: string, id: string, input: unknown) {
     }
     if (data.notes)
       validateEvidence(data.notes, data.transcript || m.transcript);
+    if (m.processing_mode === "device") {
+      if (JSON.stringify(data).length > 150000)
+        throw new HttpError(413, "This edit exceeds the free beta limit.");
+      await db.query("SELECT pg_advisory_xact_lock(810032)");
+      if (
+        Number(
+          (await db.query("SELECT pg_database_size(current_database()) bytes"))
+            .rows[0].bytes,
+        ) >
+        300 * 1024 ** 2
+      )
+        throw new HttpError(
+          507,
+          "The free beta storage is full. Export your content before making more edits.",
+        );
+    }
     await db.query(
       "INSERT INTO revisions(meeting_id,version,kind,payload,actor_id) VALUES($1,$2,'user-edit',$3,$4)",
       [id, m.version, { transcript: m.transcript, notes: m.notes }, user],
     );
+    if (m.processing_mode === "device")
+      await db.query(
+        "DELETE FROM revisions WHERE meeting_id=$1 AND id NOT IN (SELECT id FROM revisions WHERE meeting_id=$1 ORDER BY id DESC LIMIT 3)",
+        [id],
+      );
     if (data.grantIds) {
       const n = (
         await db.query(
@@ -296,6 +318,24 @@ export async function retryMeeting(user: string, id: string) {
       throw new HttpError(409, "Processing is already underway.");
     if (!m.transcript.length && m.recording_deleted)
       throw new HttpError(400, "The recording has expired. Upload it again.");
+    if (m.processing_mode === "device") {
+      const notes = extractiveNotes(m.transcript);
+      // Preserve reviewed actions when rebuilding quoted highlights.
+      const reviewed = (m.notes?.actions || []).filter(
+        (a: any) => a.status !== "proposed",
+      );
+      notes.actions = [
+        ...reviewed,
+        ...notes.actions
+          .filter((a) => !reviewed.some((r: any) => r.text === a.text))
+          .map((a) => ({ ...a, id: `${a.id}-r${m.version}` })),
+      ].slice(0, 100);
+      await db.query(
+        "UPDATE meetings SET notes=$2,notes_stale=false,version=version+1,error=NULL WHERE id=$1",
+        [id, notes],
+      );
+      return { ok: true };
+    }
     const stage = m.transcript.length ? "notes" : "transcribe";
     await db.query(
       "UPDATE meetings SET version=version+1,status=$2,error=NULL WHERE id=$1",
@@ -321,6 +361,15 @@ export async function removeMeeting(user: string, id: string) {
       "UPDATE jobs SET state='cancelled',lease_token=NULL WHERE meeting_id=$1",
       [id],
     );
+    if (m.processing_mode === "device") {
+      await db.query("DELETE FROM revisions WHERE meeting_id=$1", [id]);
+      await db.query("DELETE FROM crm_previews WHERE meeting_id=$1", [id]);
+      await db.query("DELETE FROM meeting_grants WHERE meeting_id=$1", [id]);
+      await db.query(
+        "UPDATE meetings SET title='Deleted meeting',transcript='[]',notes=NULL,status='deleted' WHERE id=$1",
+        [id],
+      );
+    }
     return { ok: true };
   });
 }
@@ -575,6 +624,22 @@ export async function deleteAccount(user: string) {
     );
     await db.query(
       "UPDATE jobs SET state='cancelled',lease_token=NULL WHERE meeting_id IN (SELECT id FROM meetings WHERE creator_id=$1)",
+      [user],
+    );
+    await db.query(
+      "DELETE FROM revisions WHERE meeting_id IN (SELECT id FROM meetings WHERE creator_id=$1 AND processing_mode='device')",
+      [user],
+    );
+    await db.query(
+      "DELETE FROM crm_previews WHERE meeting_id IN (SELECT id FROM meetings WHERE creator_id=$1 AND processing_mode='device')",
+      [user],
+    );
+    await db.query(
+      "DELETE FROM meeting_grants WHERE meeting_id IN (SELECT id FROM meetings WHERE creator_id=$1 AND processing_mode='device')",
+      [user],
+    );
+    await db.query(
+      "UPDATE meetings SET title='Deleted meeting',transcript='[]',notes=NULL,status='deleted' WHERE creator_id=$1 AND processing_mode='device'",
       [user],
     );
     await db.query("DELETE FROM meeting_grants WHERE user_id=$1", [user]);

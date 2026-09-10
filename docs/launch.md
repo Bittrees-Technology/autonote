@@ -1,45 +1,43 @@
-# AutoNote — launch and next steps
+# AutoNote free on-device beta
 
-The code is an implementation beta, not a completed public-service launch. Do not enable real customer recording on a demo-only Vercel deployment.
+Target: https://autonote.bittrees.org. Budget: free resources only.
 
-## 1. Configure production services
+## Operating configuration
 
-- PostgreSQL: a dedicated database with backups, an explicit retention schedule, TLS, and pooled web connections. Run the checked-in migration against the new database.
-- Recording storage: a private S3-compatible bucket, permitted web-origin CORS, short-lived upload and playback grants, incomplete-upload cleanup, and no public bucket policy. Set a separate preview bucket.
-- Whisper worker: deploy the container on a chosen CPU/GPU host. Start with one worker; measure latency and throughput before increasing concurrency. Use a multilingual Whisper model for Portuguese. Verify storage cleanup is running even when the transcription queue is quiet.
-- Notes provider: choose a production model after checking quality and data handling. Set the endpoint, model, and credentials on the worker only. Test long meetings and invalid provider responses. A provider outage leaves the transcript accessible and exposes a retry path.
-- Email: verify the Resend sender and deliver real sign-in codes. Turn off console delivery. Use a new production AUTH_SECRET.
+- Next.js on Vercel; functions in Frankfurt.
+- Separate Neon free-plan preview and production databases in Frankfurt. Device schema migrated September 10, 2026.
+- Browser Whisper base, quantized WASM, pinned model revision. Audio stays in IndexedDB and never goes through a recording upload endpoint in device mode.
+- Deterministic quoted highlights replace the small generative notes model that failed the earlier pilot. No owners, dates, or recommendations are invented. Candidates require review.
+- Resend sign-in through the existing verified Bittrees CRM sender, branded AutoNote. No public incoming support mailbox has been confirmed. Public GitHub issues are for non-sensitive product reports only; export/deletion is self-service.
+- No production S3 recording storage, Python worker, or paid inference endpoint. The existing empty Blob store is unused.
+- Daily authenticated cleanup expires sign-in state, integration selections/previews, and budget counters.
 
-The approved budget is **free resources only**. Separate Neon free-plan databases in Frankfurt are provisioned for preview and production, and their schemas have been migrated. A private Frankfurt Vercel Blob store has been created but is empty and not connected to application uploads; the working application storage adapter is still S3-compatible. Do not enable billable storage usage or a paid worker/model service.
+Required Vercel variables: DATABASE_URL, AUTH_SECRET, CRON_SECRET, APP_URL, PROCESSING_MODE=device, AUTONOTE_MODE=live, RESEND_API_KEY, EMAIL_FROM, DEV_EMAIL_CONSOLE=false. Preview secrets and databases are separate. Never commit environment files.
 
-Vercel deployments default to demo mode even when a database is present. Set `AUTONOTE_MODE=live` only after all operational gates pass. Local/self-hosted environments retain their existing behavior. No recording host or production notes endpoint is connected yet. Existing local Whisper, MinIO, and Ollama resources remain available for development without purchasing cloud compute.
+## Free beta boundaries
 
-## 2. Complete the pilot gates
+50 active accounts, 20 active meetings per account, 100 MB / 30 minutes per recording, 60,000 transcript characters, three recent edit revisions, and a 300 MB database guard. AutoNote reserves at most 50 sign-in emails/day and 500/month. Provider allowances are shared with other account projects and can still pause service; do not enable overage billing or paid resources. Initial support is desktop Chromium. English is primary; Portuguese remains a pilot language. Model loading requires an internet connection; long recordings and low-memory devices need further evaluation.
 
-- Browser QA on supported Chrome/Safari desktop and mobile: email, wallet cancellation, identity linking and recovery, keyboard/focus, 200% zoom, upload retry, recording interruption, IndexedDB limits, pause/stop, sharing revocation, and audio seek.
-- Diarization: install the optional dependency and model only if automated speaker separation is needed at launch. Confirm model access/license and telemetry settings; evaluate overlapping speakers. Otherwise keep “Unlabeled speaker” and manual naming explicit.
-- The first 20 synthetic cases are evaluated in [the pilot report](evaluations/synthetic-pilot.md). The small local notes model failed action extraction quality; improve it and review 20–30 consented recordings by language and noise condition. Score transcript quality and explicit-action precision. Measure the proposed 60-minute/10-minute latency target under realistic load; it has not been established by a short smoke test.
-- Verify retained audio expires, deleted meetings cannot be restored by late jobs, queued uploads cannot exceed quotas, and orphaned uploads are removed.
-- Confirm each provider and region, supply the operator’s privacy contact and backup-expiry policy, and update the privacy page before public registration.
+Google Calendar/Meet selection needs Google OAuth credentials and a live connection test. Selection does not record a meeting. CRM publication requires the user to review the target and selected content. No unattended bot or automatic publication is enabled.
 
-## 3. Publish the operational service
+## Validation
 
-- Configure Vercel preview and production environments with separate resources.
-- Deploy a preview connected to preview services; run the complete upload-to-notes workflow and real email sign-in.
-- Use an immutable release and a production migration that is backward compatible with the previous release.
-- Attach autonote.bittrees.org only once its operational services and pilot gates pass. Verify DNS, HTTPS, correct APP_URL, SIWE domain binding, sender delivery, storage CORS, and the final-domain session cookie.
-- Publish the MIT source release and keep private data out of issues and fixtures.
+- 25 TypeScript tests cover email/SIWE, identity recovery, isolation, sharing, deletion, integration boundaries, quoted highlights, device-save idempotency and malformed transcripts.
+- Local browser: actual 8.76-second fictional WAV → Whisper base → saved transcript → cited highlights → local blob playback. Corrected quote extraction tested against its actual punctuation/timestamp boundaries.
+- TypeScript and production build pass. Dependency audit reports zero vulnerabilities after the transitive sharp override.
+- `scripts/device-smoke.ts` is the deployment API check: generated wallet accounts, final-origin SIWE, private/idempotent saves, isolation, exports, edits, deletion and blocked raw-audio upload; temporary accounts are deleted.
+- The earlier 20-case server Whisper-small/Qwen pilot is historical and is not a quality benchmark for browser Whisper base. See evaluations/synthetic-pilot.md. No claim of broad language, mobile, or long-meeting validation is made.
 
-## 4. Operate, restore, and roll back
+## Operations and rollback
 
-Track queue depth/age, failed jobs by stage, lease expiry, minutes processed, worker time, storage size, notes-model usage, and deletion backlog. Never log transcript text, codes, signatures, session tokens, or presigned URLs.
+Check deployment health, authentication delivery, database size and free-plan allowances in provider dashboards. Do not log transcripts, codes, signatures, cookies, or connection credentials. Download recordings and exports you need to retain: browser storage may be evicted. Neon free restore history is limited (currently up to six hours or 1 GB of changes). No separate audio backup is maintained.
 
-Back up PostgreSQL using the selected managed service and private object storage according to the published retention policy. In staging, restore a database backup and a test recording into isolated resources; verify record permissions, playback, and job consistency. Keep restored resources inaccessible to ordinary users until deletion tombstones and retention policy are reapplied. Record the restore time and recovery point.
+For code rollback, return to a tested device-mode release with the forward-compatible schema. If only the old demo release is available, set AUTONOTE_MODE=demo and redeploy it; do not point old server-mode behavior at the device launch. Do not drop data to reverse migrations. Restoring database history must reconcile deletion tombstones before users regain access. A full disaster-recovery exercise remains future operating work.
 
-To roll back code, stop new processing claims, return Vercel and the worker to the previous compatible release, and keep the database schema forward compatible. Do not drop data to reverse a schema change. Expired leases can be retried with the current generation; verify that no old worker can publish after deployment. Restore backups only for actual data-loss incidents, with deletion reconciliation.
+## Next milestones
 
-## 5. Next product milestone
-
-CRM connection and reviewed, idempotent publication are implemented. Google Calendar/Meet is the confirmed first platform: read-only primary-calendar access and per-event manual-recording selection are implemented, pending Google OAuth credentials and a live browser test. See [integration setup](integrations.md).
-
-The remaining capture milestone is a suitable free worker/storage deployment and explicitly consented unattended Meet capture. Calendar selection alone does not record a meeting. Shared Bittrees SSO remains a separate identity-service decision.
+1. Configure a monitored private support/privacy inbox.
+2. Configure and test Google OAuth for primary-calendar/Meet selection.
+3. Pilot longer consented recordings, Portuguese, additional browsers, recording interruption and device-storage eviction.
+4. Evaluate better local summarization and explicit-action precision before adding generative notes.
+5. Add tab/system-audio capture and unattended capture only after a supported capture design and free-resource feasibility are established.

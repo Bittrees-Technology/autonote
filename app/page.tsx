@@ -1,4 +1,11 @@
 "use client";
+import {
+  localRecordings,
+  storeRecording,
+  forgetRecording,
+  transcribeOnDevice,
+  type LocalRecording,
+} from "../lib/device-recording";
 import { GoogleCalendarSettings } from "../components/google-calendar";
 import { CrmSettings, CrmPublish } from "../components/crm";
 import { useEffect, useRef, useState } from "react";
@@ -148,6 +155,10 @@ export default function App() {
     [grantIds, setGrantIds] = useState<string[]>([]),
     [retention, setRetention] = useState(30),
     [workspaceName, setWorkspaceName] = useState("");
+  const [processingMode, setProcessingMode] = useState("server");
+  const [deviceProgress, setDeviceProgress] = useState("");
+  const [deviceFiles, setDeviceFiles] = useState<LocalRecording[]>([]);
+  const deviceAbort = useRef<AbortController | null>(null);
   const draftVersion = useRef<number>(0);
   const abort = useRef<AbortController | null>(null);
   const currentWorkspace = workspaces.find((w) => w.id === workspace);
@@ -158,6 +169,7 @@ export default function App() {
     const d = await api(
       "me" + (ws ? "?workspace=" + encodeURIComponent(ws) : ""),
     );
+    setProcessingMode(d.processingMode || "server");
     setUser(d.user);
     if (d.user) {
       setDemo(false);
@@ -198,27 +210,47 @@ export default function App() {
       .then((c) => setRecoverable(c.length > 0))
       .catch(() => {});
     return () => {
+      deviceAbort.current?.abort();
       abort.current?.abort();
       stream.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
   useEffect(() => {
+    if (user && !demo)
+      localRecordings(user.id)
+        .then(setDeviceFiles)
+        .catch(() => {});
+    else setDeviceFiles([]);
+  }, [user?.id, demo, selected]);
+  useEffect(() => {
     if (!user || demo) return;
-    const timer = setInterval(() => refresh().catch(() => {}), 5000);
+    const timer = setInterval(
+      () => {
+        if (document.visibilityState === "visible") refresh().catch(() => {});
+      },
+      processingMode === "device" ? 60000 : 5000,
+    );
     return () => clearInterval(timer);
-  }, [user, workspace, demo]);
+  }, [user, workspace, demo, processingMode]);
   useEffect(() => {
     if (!recording || paused) return;
     const timer = setInterval(() => setElapsed((v) => v + 1), 1000);
     return () => clearInterval(timer);
   }, [recording, paused]);
+  useEffect(
+    () => () => {
+      if (audioUrl.startsWith("blob:")) URL.revokeObjectURL(audioUrl);
+    },
+    [audioUrl],
+  );
   useEffect(() => {
     setAudioUrl("");
     setEditTranscript(false);
     setEditingNotes(false);
   }, [selected]);
   useEffect(() => {
-    if (elapsed >= 7200 && recording) stopRecording();
+    if (elapsed >= (processingMode === "device" ? 1800 : 7200) && recording)
+      stopRecording();
   }, [elapsed, recording]);
   async function run(fn: () => Promise<void>) {
     setError("");
@@ -314,6 +346,10 @@ export default function App() {
       return;
     }
     if (!file || !consent) return;
+    if (processingMode === "device") {
+      await deviceUpload();
+      return;
+    }
     await run(async () => {
       setProgress(0);
       const key = "autonote-upload-" + user.id;
@@ -382,6 +418,83 @@ export default function App() {
       setFile(null);
       setNotice(
         "Recording received. You can leave this page while AutoNote processes it.",
+      );
+    });
+  }
+  async function deviceUpload() {
+    if (!user || !file || !consent) return;
+    await run(async () => {
+      if (file.size > 100 * 1024 * 1024)
+        throw new Error(
+          "Choose a recording smaller than 100 MB for this free beta.",
+        );
+      setDeviceProgress("");
+      const fingerprint = [file.name, file.size, file.lastModified].join(":");
+      const all = await localRecordings(user.id);
+      let local = all.find(
+        (r) =>
+          r.fingerprint === fingerprint &&
+          r.workspace === workspace &&
+          !r.saved,
+      );
+      if (!local) {
+        const id = crypto.randomUUID();
+        local = {
+          key: user.id + ":" + id,
+          user: user.id,
+          id,
+          file,
+          name: file.name,
+          fingerprint,
+          workspace,
+          title: title || file.name,
+          language,
+          created: Date.now(),
+        };
+        await storeRecording(local);
+      }
+      deviceAbort.current = new AbortController();
+      if (!local.transcript) {
+        const result = await transcribeOnDevice(
+          file,
+          local.language,
+          (message, percent) => {
+            setDeviceProgress(message);
+            setProgress(percent || 0);
+          },
+          deviceAbort.current.signal,
+        );
+        local = {
+          ...local,
+          transcript: result.transcript,
+          duration: result.duration,
+        };
+        await storeRecording(local);
+      }
+      setDeviceProgress("Saving private transcript and highlights…");
+      const d = await api("device/meetings", {
+        id: local.id,
+        workspaceId: local.workspace,
+        title: local.title,
+        language: local.language,
+        duration: local.duration,
+        transcript: local.transcript,
+        consent: true,
+      });
+      await storeRecording({ ...local, saved: true });
+      if (savedRecording) {
+        await clearRecording();
+        setRecoverable(false);
+        setSavedRecording(false);
+      }
+      setDeviceFiles(await localRecordings(user.id));
+      await refresh();
+      setSelected(d.id);
+      setModal("");
+      setFile(null);
+      setDeviceProgress("");
+      setNotice(
+        "Transcript saved privately. Audio stays on this device. Review quoted highlights and action candidates before sharing.",
       );
     });
   }
@@ -494,7 +607,15 @@ export default function App() {
     }
     await run(async () => {
       if (!audioUrl) {
-        const d = await api(`meetings/${active.id}/audio`);
+        const local = deviceFiles.find((r) => r.id === active.id);
+        if (active.processing_mode === "device" && !local)
+          throw new Error(
+            "Audio is only available on the device where this meeting was recorded. Transcripts and notes are shared separately.",
+          );
+        const d =
+          active.processing_mode === "device"
+            ? { url: URL.createObjectURL(local!.file) }
+            : await api(`meetings/${active.id}/audio`);
         setAudioUrl(d.url);
         setTimeout(() => {
           if (player.current) {
@@ -780,6 +901,8 @@ export default function App() {
                 run(async () => {
                   await api("auth/logout", {});
                   setUser(null);
+                  setAudioUrl("");
+                  setDeviceFiles([]);
                   setDemo(true);
                   setSelected("demo");
                   setPage("meetings");
@@ -1099,7 +1222,9 @@ export default function App() {
                             <div className="summary-heading">
                               <span className="eyebrow">
                                 <Activity size={15} />
-                                MEETING NOTES
+                                {active.processing_mode === "device"
+                                  ? "QUOTED HIGHLIGHTS"
+                                  : "MEETING NOTES"}
                               </span>
                               {active.canEdit && (
                                 <button
@@ -1135,10 +1260,11 @@ export default function App() {
                             {noteSection("decisions", "Decisions")}
                             {noteSection("actions", "Next steps")}
                             {noteSection("questions", "Open questions")}
-                            {noteSection(
-                              "recommendations",
-                              "Suggestions for next time",
-                            )}
+                            {active.processing_mode !== "device" &&
+                              noteSection(
+                                "recommendations",
+                                "Suggestions for next time",
+                              )}
                             {editingNotes && (
                               <button
                                 className="primary"
@@ -1304,14 +1430,20 @@ export default function App() {
                         <button
                           className="play-recording"
                           onClick={() => seek(0)}
-                          disabled={active.recording_deleted && !demo}
+                          disabled={
+                            active.recording_deleted &&
+                            active.processing_mode !== "device" &&
+                            !demo
+                          }
                         >
                           <Play size={17} />
                           {demo
                             ? "Demo recording"
-                            : active.recording_deleted
-                              ? "Recording expired"
-                              : "Play recording"}
+                            : active.processing_mode === "device"
+                              ? "Play device recording"
+                              : active.recording_deleted
+                                ? "Recording expired"
+                                : "Play recording"}
                           <span>
                             {active.duration ? stamp(active.duration) : "—"}
                           </span>
@@ -1320,9 +1452,11 @@ export default function App() {
                       <p>
                         {demo
                           ? "Fictional sample · no audio file"
-                          : active.recording_deleted
-                            ? "The transcript and notes are still available."
-                            : "Private audio · short-lived playback access"}
+                          : active.processing_mode === "device"
+                            ? "Audio stays on the recording device; it is not uploaded or shared."
+                            : active.recording_deleted
+                              ? "The transcript and notes are still available."
+                              : "Private audio · short-lived playback access"}
                       </p>
                     </div>
                     <div className="aside-section">
@@ -1346,8 +1480,9 @@ export default function App() {
                     <div className="aside-section">
                       <h3>A useful starting point</h3>
                       <p className="muted">
-                        Review names, dates, and decisions before sharing.
-                        Suggestions are drafts, with links to the conversation.
+                        {active.processing_mode === "device"
+                          ? "Highlights quote your transcript. Review action candidates before accepting them. Owners and dates are never inferred. Speaker names need manual review."
+                          : "Review names, dates, and decisions before sharing. Suggestions are drafts, with links to the conversation."}
                       </p>
                     </div>
                     <div className="private-label">
@@ -1448,6 +1583,81 @@ export default function App() {
                   </button>
                 )}
               </section>
+              {user && processingMode === "device" && (
+                <section>
+                  <h2>Recordings on this device</h2>
+                  <p className="muted">
+                    These files stay in this browser. Download important
+                    recordings before clearing browser data. Signing out keeps
+                    local audio; remove it here on a shared device.
+                  </p>
+                  {!deviceFiles.length && (
+                    <p>No saved recordings on this device.</p>
+                  )}
+                  {deviceFiles.map((r) => (
+                    <div className="identity" key={r.key}>
+                      <span>
+                        {r.title} ·{" "}
+                        {r.saved
+                          ? "Transcript saved"
+                          : "Not yet saved to your account"}
+                      </span>
+                      {!r.saved && (
+                        <button
+                          className="text-button"
+                          disabled={busy}
+                          onClick={() => {
+                            setWorkspace(r.workspace);
+                            setTitle(r.title);
+                            setLanguage(r.language);
+                            setFile(
+                              new File([r.file], r.name, {
+                                type: r.file.type,
+                                lastModified: Number(
+                                  r.fingerprint.split(":").at(-1),
+                                ),
+                              }),
+                            );
+                            setConsent(false);
+                            setModal("upload");
+                          }}
+                        >
+                          Resume
+                        </button>
+                      )}
+                      <button
+                        className="text-button"
+                        onClick={() => {
+                          const url = URL.createObjectURL(r.file);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = r.name;
+                          a.click();
+                          setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        }}
+                      >
+                        Download
+                      </button>
+                      <button
+                        className="text-button"
+                        onClick={() => {
+                          if (
+                            confirm(
+                              "Remove this audio file from this device? Download it first if you need a copy.",
+                            )
+                          )
+                            void run(async () => {
+                              await forgetRecording(r.key);
+                              setDeviceFiles(await localRecordings(user.id));
+                            });
+                        }}
+                      >
+                        Remove audio
+                      </button>
+                    </div>
+                  ))}
+                </section>
+              )}
               <section>
                 <h2>Workspace</h2>
                 {demo ? (
@@ -1464,25 +1674,27 @@ export default function App() {
                         disabled={settings?.role !== "owner"}
                       />
                     </label>
-                    <label>
-                      Keep recordings for
-                      <select
-                        value={retention}
-                        disabled={settings?.role !== "owner"}
-                        onChange={(e) => setRetention(Number(e.target.value))}
-                      >
-                        {[1, 7, 14, 30, 60, 90, 365].map((d) => (
-                          <option value={d} key={d}>
-                            {d} days
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    {processingMode !== "device" && (
+                      <label>
+                        Keep recordings for
+                        <select
+                          value={retention}
+                          disabled={settings?.role !== "owner"}
+                          onChange={(e) => setRetention(Number(e.target.value))}
+                        >
+                          {[1, 7, 14, 30, 60, 90, 365].map((d) => (
+                            <option value={d} key={d}>
+                              {d} days
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     <p className="muted">
                       Transcripts and notes remain until deleted.{" "}
-                      {Math.round(settings?.usage || 0)} of{" "}
-                      {currentWorkspace?.monthly_minutes} transcription minutes
-                      used this month.
+                      {processingMode === "device"
+                        ? "Audio stays in this browser until you remove it or clear browser storage. Up to 20 active meetings per account."
+                        : `${Math.round(settings?.usage || 0)} of ${currentWorkspace?.monthly_minutes} transcription minutes used this month.`}
                     </p>
                     {settings?.role === "owner" && (
                       <button
@@ -1817,6 +2029,10 @@ export default function App() {
             modal === "record" ? "Record a conversation" : "Upload a recording"
           }
           onClose={() => {
+            if (busy) {
+              setError("Cancel processing before closing this window.");
+              return;
+            }
             if (recording) {
               setError("Stop recording before closing this window.");
               return;
@@ -1824,6 +2040,15 @@ export default function App() {
             setModal("");
           }}
         >
+          {processingMode === "device" && (
+            <p className="fine">
+              Audio stays on this device. Whisper downloads a speech model on
+              first use; keep this tab open while it transcribes. Only your
+              transcript and editable highlights are saved to your account.
+              Desktop browser recommended · 100 MB / 30 minutes per recording ·
+              20 active meetings per account.
+            </p>
+          )}
           <label>
             Meeting title
             <input
@@ -1860,7 +2085,12 @@ export default function App() {
             <label className="dropzone">
               <Upload size={30} />
               <strong>{file ? file.name : "Choose audio or video"}</strong>
-              <span>MP3, WAV, M4A, WebM, MP4 · up to 1 GB / 2 hours</span>
+              <span>
+                MP3, WAV, M4A, WebM, MP4 ·{" "}
+                {processingMode === "device"
+                  ? "up to 100 MB / 30 minutes"
+                  : "up to 1 GB / 2 hours"}
+              </span>
               <input
                 type="file"
                 accept=".mp3,.wav,.m4a,.webm,.mp4"
@@ -1926,7 +2156,9 @@ export default function App() {
                 ) : (
                   <Upload size={17} />
                 )}
-                Upload and create notes
+                {processingMode === "device"
+                  ? "Transcribe on this device"
+                  : "Upload and create notes"}
               </button>
               {savedRecording && (
                 <button
@@ -1945,7 +2177,18 @@ export default function App() {
               )}
             </>
           )}
-          {busy && progress > 0 && (
+          {busy && processingMode === "device" && (
+            <div role="status">
+              <p>{deviceProgress}</p>
+              <button
+                className="secondary"
+                onClick={() => deviceAbort.current?.abort()}
+              >
+                Cancel transcription
+              </button>
+            </div>
+          )}
+          {busy && processingMode !== "device" && progress > 0 && (
             <label>
               Uploading {progress}%<progress value={progress} max={100} />
             </label>
@@ -1960,8 +2203,9 @@ export default function App() {
       {modal === "share" && active && (
         <Dialog title="Share meeting" onClose={() => setModal("")}>
           <p>
-            Sharing includes the transcript, notes, and recording while
-            retained.
+            {active.processing_mode === "device"
+              ? "Sharing includes the transcript and notes. Audio remains on the recording device and is not shared."
+              : "Sharing includes the transcript, notes, and recording while retained."}
           </p>
           <label>
             Visibility
@@ -2088,8 +2332,9 @@ export default function App() {
       {modal === "delete-meeting" && active && (
         <Dialog title="Delete this meeting?" onClose={() => setModal("")}>
           <p>
-            Access is removed immediately. The recording, transcript, notes, and
-            revisions are then permanently removed by the cleanup worker.
+            {active.processing_mode === "device"
+              ? "This permanently removes the transcript, notes, revisions, and this browser’s local recording. Copies on other devices or already published to CRM remain independent."
+              : "Access is removed immediately. The recording, transcript, notes, and revisions are then permanently removed by the cleanup worker."}
           </p>
           <button
             className="danger-button full"
@@ -2105,6 +2350,11 @@ export default function App() {
                     { confirm: true },
                     "DELETE",
                   );
+                  if (user) {
+                    const local = deviceFiles.find((r) => r.id === active.id);
+                    if (local) await forgetRecording(local.key);
+                    setDeviceFiles(await localRecordings(user.id));
+                  }
                   await refresh();
                   setSelected(null);
                 }
@@ -2194,6 +2444,12 @@ export default function App() {
             onClick={() =>
               run(async () => {
                 await api("account", { confirm: deleteText }, "DELETE");
+                if (user)
+                  for (const local of await localRecordings(user.id))
+                    await forgetRecording(local.key);
+                await clearRecording();
+                setRecoverable(false);
+                setDeviceFiles([]);
                 setUser(null);
                 setDemo(true);
                 setSelected("demo");

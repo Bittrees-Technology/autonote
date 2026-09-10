@@ -395,3 +395,141 @@ test("CRM publication requires an accepted selection and unchanged reviewed meet
     globalThis.fetch = fetchOriginal;
   }
 });
+
+test("device saves are private, idempotent, bounded, and deleted without a worker", async () => {
+  const { saveDeviceMeeting } = await import("../lib/device-service");
+  const account = await login(),
+    outsider = await login();
+  const uid = (await currentUser(req(account.session)))!.id;
+  const oid = (await currentUser(req(outsider.session)))!.id;
+  const workspaceId = (
+    await pool().query("SELECT workspace_id FROM members WHERE user_id=$1", [
+      uid,
+    ])
+  ).rows[0].workspace_id;
+  await pool().query("INSERT INTO members VALUES($1,$2,'viewer')", [
+    workspaceId,
+    oid,
+  ]);
+  const data = {
+    id: randomUUID(),
+    workspaceId,
+    title: "Fictional device meeting",
+    language: "en",
+    consent: true,
+    duration: 12,
+    transcript: [
+      {
+        id: "s1",
+        start: 0,
+        end: 12,
+        speaker: "Unlabeled speaker",
+        text: "Maya will prepare the checklist. We agreed to keep the release free.",
+      },
+    ],
+  };
+  await assert.rejects(saveDeviceMeeting(oid, data));
+  await assert.rejects(saveDeviceMeeting(uid, { ...data, duration: 1801 }));
+  await assert.rejects(
+    saveDeviceMeeting(uid, {
+      ...data,
+      transcript: [{ ...data.transcript[0], end: 20 }],
+    }),
+  );
+  await assert.rejects(
+    saveDeviceMeeting(uid, {
+      ...data,
+      transcript: [data.transcript[0], data.transcript[0]],
+    }),
+  );
+  const saved = await saveDeviceMeeting(uid, data);
+  assert.equal(saved.id, data.id);
+  assert.equal((await saveDeviceMeeting(uid, data)).id, data.id);
+  assert.equal(
+    (
+      await pool().query(
+        "SELECT count(*)::int n FROM usage WHERE meeting_id=$1",
+        [data.id],
+      )
+    ).rows[0].n,
+    1,
+  );
+  await assert.rejects(meeting(oid, data.id));
+  await assert.rejects(
+    saveDeviceMeeting(uid, { ...data, title: "Changed retry" }),
+  );
+  const value = await meeting(uid, data.id);
+  assert.equal(value.processing_mode, "device");
+  assert.equal(value.recording_deleted, true);
+  assert.equal(value.notes?.actions[0].owner, null);
+  assert.equal(value.notes?.decisions.length, 1);
+  assert.equal(
+    (
+      await pool().query("SELECT object_key FROM meetings WHERE id=$1", [
+        data.id,
+      ])
+    ).rows[0].object_key,
+    null,
+  );
+  assert.equal(
+    (await pool().query("SELECT 1 FROM jobs WHERE meeting_id=$1", [data.id]))
+      .rowCount,
+    0,
+  );
+  await editMeeting(uid, data.id, { version: 1, grantIds: [oid] });
+  assert.equal((await meeting(oid, data.id)).id, data.id);
+  await removeMeeting(uid, data.id);
+  await assert.rejects(saveDeviceMeeting(uid, data));
+  const deleted = (
+    await pool().query("SELECT transcript,notes FROM meetings WHERE id=$1", [
+      data.id,
+    ])
+  ).rows[0];
+  assert.deepEqual(deleted.transcript, []);
+  assert.equal(deleted.notes, null);
+  assert.equal(
+    (
+      await pool().query("SELECT 1 FROM revisions WHERE meeting_id=$1", [
+        data.id,
+      ])
+    ).rowCount,
+    0,
+  );
+});
+
+test("free email budget rejects excess sends without consuming the monthly allowance", async () => {
+  const { reserveEmail } = await import("../lib/maintenance");
+  const original = process.env.PROCESSING_MODE;
+  process.env.PROCESSING_MODE = "device";
+  const day = new Date().toISOString().slice(0, 10),
+    month = day.slice(0, 7);
+  try {
+    await pool().query("DELETE FROM email_budget");
+    await pool().query("INSERT INTO email_budget VALUES($1,49),($2,100)", [
+      day,
+      month,
+    ]);
+    await reserveEmail();
+    await assert.rejects(reserveEmail());
+    assert.equal(
+      (
+        await pool().query("SELECT hits FROM email_budget WHERE period=$1", [
+          month,
+        ])
+      ).rows[0].hits,
+      101,
+    );
+    assert.equal(
+      (
+        await pool().query("SELECT hits FROM email_budget WHERE period=$1", [
+          day,
+        ])
+      ).rows[0].hits,
+      50,
+    );
+  } finally {
+    if (original === undefined) delete process.env.PROCESSING_MODE;
+    else process.env.PROCESSING_MODE = original;
+    await pool().query("DELETE FROM email_budget");
+  }
+});

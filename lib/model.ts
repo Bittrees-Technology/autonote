@@ -51,6 +51,7 @@ export type Meeting = {
   error: string | null;
   canEdit?: boolean;
   recording_deleted: boolean;
+  processing_mode?: "server" | "device";
 };
 export function validateEvidence(notes: Notes, segments: Segment[]) {
   const ids = new Set(segments.map((s) => s.id));

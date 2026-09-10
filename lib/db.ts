@@ -47,4 +47,7 @@ CREATE TABLE IF NOT EXISTS crm_previews(hash text PRIMARY KEY,user_id uuid REFER
 CREATE TABLE IF NOT EXISTS google_pending(state_hash text PRIMARY KEY,user_id uuid REFERENCES users(id),session_hash text NOT NULL,verifier text NOT NULL,expires_at timestamptz NOT NULL);
 CREATE TABLE IF NOT EXISTS google_connections(user_id uuid PRIMARY KEY REFERENCES users(id),refresh_ciphertext text NOT NULL,created_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS google_selections(user_id uuid REFERENCES google_connections(user_id) ON DELETE CASCADE,event_id text NOT NULL,title text NOT NULL,meet_url text NOT NULL,starts_at timestamptz NOT NULL,ends_at timestamptz NOT NULL,selected_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(user_id,event_id));
+ALTER TABLE meetings ADD COLUMN IF NOT EXISTS processing_mode text NOT NULL DEFAULT 'server';
+ALTER TABLE meetings ADD COLUMN IF NOT EXISTS ingestion_hash text;
+CREATE TABLE IF NOT EXISTS email_budget(period text PRIMARY KEY,hits int NOT NULL DEFAULT 0);
 `;
