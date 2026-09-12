@@ -104,7 +104,7 @@ function Dialog({
     >
       <header>
         <h2 id={headingId}>{title}</h2>
-        <button className="icon" aria-label="Close" onClick={onClose}>
+        <button data-insights="close" className="icon" aria-label="Close" onClick={onClose}>
           <X size={20} />
         </button>
       </header>
@@ -898,7 +898,7 @@ export default function App() {
                         <span>{n.dueDate || "No date stated"}</span>
                       </>
                     )}
-                    <select
+                    <select data-insights="action-status"
                       aria-label="Action status"
                       value={n.status}
                       disabled={readOnly || busy || editingNotes}
@@ -947,7 +947,7 @@ export default function App() {
       ) : (
         <>
           <aside className="sidebar">
-            <a className="brand" href="/" aria-label="AutoNote home">
+            <a data-insights="autonote-home" className="brand" href="/" aria-label="AutoNote home">
               <span className="brand-mark">
                 <Activity size={24} />
               </span>
@@ -973,7 +973,7 @@ export default function App() {
               <ChevronRight size={16} />
             </button>
             {user && !demo && (
-              <select
+              <select data-insights="switch-workspace"
                 aria-label="Switch workspace"
                 className="workspace-select"
                 value={workspace}
@@ -991,7 +991,7 @@ export default function App() {
               </select>
             )}
             <nav>
-              <button
+              <button data-insights="meetings"
                 className={page === "meetings" ? "active" : ""}
                 onClick={() => {
                   setPage("meetings");
@@ -1001,7 +1001,7 @@ export default function App() {
                 <FileAudio size={19} />
                 Meetings<span>{list.length}</span>
               </button>
-              <button
+              <button data-insights="action-items"
                 className={page === "actions" ? "active" : ""}
                 onClick={() => setPage("actions")}
               >
@@ -1015,7 +1015,7 @@ export default function App() {
                   }
                 </span>
               </button>
-              <button
+              <button data-insights="settings"
                 className={page === "settings" ? "active" : ""}
                 onClick={openSettings}
               >
@@ -1058,7 +1058,7 @@ export default function App() {
                   <LogOut size={16} />
                 </button>
               ) : (
-                <button className="primary full" onClick={() => signIn()}>
+                <button data-insights="sign-in" className="primary full" onClick={() => signIn()}>
                   <KeyRound size={16} />
                   Sign in
                 </button>
@@ -1073,7 +1073,7 @@ export default function App() {
               </span>
               <div>
                 {demo && <span className="pill">DEMO</span>}
-                <a href="/privacy">Privacy</a>
+                <a data-insights="navigate-/privacy" href="/privacy">Privacy</a>
                 <span className="beta">BETA</span>
               </div>
             </div>
@@ -1083,7 +1083,7 @@ export default function App() {
                   This is a fictional meeting. Sign in to record and save your
                   own.
                 </span>
-                <button onClick={() => signIn()}>
+                <button data-insights="use-autonote" onClick={() => signIn()}>
                   Use AutoNote <ChevronRight size={14} />
                 </button>
               </div>
@@ -1120,7 +1120,7 @@ export default function App() {
             {error && (
               <div className="message error" role="alert">
                 {error}
-                <button onClick={() => setError("")} aria-label="Dismiss error">
+                <button data-insights="dismiss-error" onClick={() => setError("")} aria-label="Dismiss error">
                   <X size={16} />
                 </button>
               </div>
@@ -1128,7 +1128,7 @@ export default function App() {
             {notice && (
               <div className="message" role="status">
                 {notice}
-                <button
+                <button data-insights="dismiss-notice"
                   onClick={() => setNotice("")}
                   aria-label="Dismiss notice"
                 >
@@ -1147,7 +1147,7 @@ export default function App() {
                 <div className="page-heading">
                   <div>
                     {active && (
-                      <button
+                      <button data-insights="all-meetings"
                         className="back"
                         onClick={() => setSelected(null)}
                       >
@@ -1187,7 +1187,7 @@ export default function App() {
                     </p>
                   </div>
                   <div className="heading-actions">
-                    <button
+                    <button data-insights="upload"
                       className="secondary"
                       disabled={readOnly}
                       onClick={() => {
@@ -1205,7 +1205,7 @@ export default function App() {
                       <Upload size={17} />
                       Upload
                     </button>
-                    <button
+                    <button data-insights="record"
                       className="primary"
                       disabled={readOnly}
                       onClick={() => {
@@ -1227,8 +1227,8 @@ export default function App() {
                 {recoverable && user && !recording && (
                   <div className="message">
                     A recording is saved on this device.
-                    <button onClick={recoverRecording}>Recover audio</button>
-                    <button onClick={() => setModal("discard")}>Discard</button>
+                    <button data-insights="recover-audio" onClick={recoverRecording}>Recover audio</button>
+                    <button data-insights="discard" onClick={() => setModal("discard")}>Discard</button>
                   </div>
                 )}
                 {!active ? (
@@ -1243,7 +1243,7 @@ export default function App() {
                           onChange={(e) => setSearch(e.target.value)}
                         />
                       </label>
-                      <select
+                      <select data-insights="filter-meetings"
                         aria-label="Filter meetings"
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
@@ -1329,7 +1329,7 @@ export default function App() {
                         ))}
                       </div>
                       <div className="toolbar-buttons">
-                        <button
+                        <button data-insights="share"
                           className="text-button"
                           disabled={!active.canEdit}
                           onClick={() =>
@@ -1355,14 +1355,14 @@ export default function App() {
                           <Users size={16} />
                           Share
                         </button>
-                        <button
+                        <button data-insights="export-meeting"
                           className="icon"
                           aria-label="Export meeting"
                           onClick={() => setModal("export")}
                         >
                           <ArrowDownToLine size={18} />
                         </button>
-                        <button
+                        <button data-insights="meeting-options"
                           className="icon"
                           aria-label="Meeting options"
                           onClick={() => setModal("options")}
@@ -1457,7 +1457,7 @@ export default function App() {
                                     "Suggestions for next time",
                                   )}
                                 {editingNotes && (
-                                  <button
+                                  <button data-insights="save-notes"
                                     className="primary"
                                     disabled={busy}
                                     onClick={() =>
@@ -1570,7 +1570,7 @@ export default function App() {
                               </div>
                             ))}
                             {editTranscript && (
-                              <button
+                              <button data-insights="save-transcript"
                                 className="primary"
                                 disabled={busy}
                                 onClick={() =>
@@ -1764,14 +1764,14 @@ export default function App() {
                         </small>
                       </div>
                     ))}
-                    <button
+                    <button data-insights="link-a-sign-in-method"
                       className="secondary"
                       onClick={() => signIn(!!user)}
                     >
                       Link a sign-in method
                     </button>
                     {user && (
-                      <button
+                      <button data-insights="export-my-data"
                         className="text-button"
                         onClick={() =>
                           run(async () => {
@@ -1808,7 +1808,7 @@ export default function App() {
                               : "Not yet saved to your account"}
                           </span>
                           {!r.saved && (
-                            <button
+                            <button data-insights="resume"
                               className="text-button"
                               disabled={busy}
                               onClick={() => {
@@ -1830,7 +1830,7 @@ export default function App() {
                               Resume
                             </button>
                           )}
-                          <button
+                          <button data-insights="download"
                             className="text-button"
                             onClick={() => {
                               const url = URL.createObjectURL(r.file);
@@ -1843,7 +1843,7 @@ export default function App() {
                           >
                             Download
                           </button>
-                          <button
+                          <button data-insights="remove-audio"
                             className="text-button"
                             onClick={() => {
                               if (
@@ -1906,7 +1906,7 @@ export default function App() {
                             : `${Math.round(settings?.usage || 0)} of ${currentWorkspace?.monthly_minutes} transcription minutes used this month.`}
                         </p>
                         {settings?.role === "owner" && (
-                          <button
+                          <button data-insights="save-workspace-settings"
                             className="secondary"
                             onClick={() =>
                               run(async () => {
@@ -1925,7 +1925,7 @@ export default function App() {
                         )}
                       </>
                     )}
-                    <button
+                    <button data-insights="new-workspace"
                       className="text-button"
                       onClick={() => (user ? setModal("workspace") : signIn())}
                     >
@@ -1979,7 +1979,7 @@ export default function App() {
                           />
                         </label>
                         <div className="row">
-                          <select
+                          <select data-insights="invite-role"
                             aria-label="Invite role"
                             value={inviteRole}
                             onChange={(e) => setInviteRole(e.target.value)}
@@ -1987,7 +1987,7 @@ export default function App() {
                             <option>viewer</option>
                             <option>editor</option>
                           </select>
-                          <button
+                          <button data-insights="create-invite-link"
                             className="secondary"
                             onClick={() =>
                               run(async () => {
@@ -2021,7 +2021,7 @@ export default function App() {
                           .map((i: any) => (
                             <div className="member" key={i.id}>
                               <span>{i.email}</span>
-                              <button
+                              <button data-insights="revoke"
                                 className="text-button"
                                 onClick={() =>
                                   run(async () => {
@@ -2057,9 +2057,9 @@ export default function App() {
                         ? "Whisper processes audio in this browser. Only transcripts and notes sync to your account."
                         : "Processing requires the configured transcription and notes services."}
                     </p>
-                    <a href="/privacy">Read the privacy details</a>
+                    <a data-insights="navigate-/privacy" href="/privacy">Read the privacy details</a>
                     {user && (
-                      <button
+                      <button data-insights="delete-my-account"
                         className="danger text-button"
                         onClick={() => {
                           setDeleteText("");
@@ -2131,7 +2131,7 @@ export default function App() {
               {challenge ? "Verify email" : "Send sign-in code"}
             </button>
             {challenge && (
-              <button
+              <button data-insights="use-a-different-email"
                 type="button"
                 className="text-button"
                 onClick={() => setChallenge("")}
@@ -2141,7 +2141,7 @@ export default function App() {
             )}
           </form>
           <div className="or">or</div>
-          <button
+          <button data-insights="continue-with-ethereum"
             className="secondary full"
             disabled={busy}
             onClick={walletSign}
@@ -2188,7 +2188,7 @@ export default function App() {
             ))}
           </div>
           {!reauth ? (
-            <button
+            <button data-insights="verify-current-account"
               className="primary full"
               onClick={() => {
                 setAuthLink(true);
@@ -2201,7 +2201,7 @@ export default function App() {
               Verify current account
             </button>
           ) : (
-            <button
+            <button data-insights="confirm-and-combine-accounts"
               className="primary full"
               disabled={busy}
               onClick={() =>
@@ -2338,13 +2338,13 @@ export default function App() {
                   >
                     {paused ? <Play size={16} /> : <Pause size={16} />}
                   </button>
-                  <button className="secondary" onClick={stopRecording}>
+                  <button data-insights="stop" className="secondary" onClick={stopRecording}>
                     <Square size={16} />
                     Stop
                   </button>
                 </div>
               ) : !file ? (
-                <button
+                <button data-insights="start-recording"
                   className="primary full"
                   disabled={!consent || busy || recoverable}
                   onClick={startRecording}
@@ -2378,7 +2378,7 @@ export default function App() {
                   : "Upload and create notes"}
               </button>
               {savedRecording && (
-                <button
+                <button data-insights="download-a-local-copy"
                   className="text-button"
                   onClick={() => {
                     const u = URL.createObjectURL(file);
@@ -2397,7 +2397,7 @@ export default function App() {
           {busy && processingMode === "device" && (
             <div role="status">
               <p>{deviceProgress}</p>
-              <button
+              <button data-insights="cancel-transcription"
                 className="secondary"
                 onClick={() => deviceAbort.current?.abort()}
               >
@@ -2459,7 +2459,7 @@ export default function App() {
             Saving replaces the current recipient list. Only current workspace
             members can receive access.
           </p>
-          <button
+          <button data-insights="save-sharing"
             className="primary full"
             onClick={() =>
               run(async () => {
@@ -2510,7 +2510,7 @@ export default function App() {
               disabled={!active.canEdit}
             />
           </label>
-          <button
+          <button data-insights="retry-processing-/-regenerate-notes"
             className="secondary full"
             disabled={!active.canEdit || busy || demo}
             onClick={() =>
@@ -2524,7 +2524,7 @@ export default function App() {
             Retry processing / regenerate notes
           </button>
           {!demo && (
-            <button
+            <button data-insights="publish-to-bittrees-crm"
               className="secondary full"
               disabled={!active.notes}
               onClick={() => setModal("crm")}
@@ -2536,7 +2536,7 @@ export default function App() {
             Regeneration preserves accepted and completed actions. New
             suggestions remain drafts.
           </p>
-          <button
+          <button data-insights="delete-this-meeting"
             className="danger text-button"
             disabled={!active.canEdit}
             onClick={() => setModal("delete-meeting")}
@@ -2553,7 +2553,7 @@ export default function App() {
               ? "This permanently removes the transcript, notes, revisions, and this browser’s local recording. Copies on other devices or already published to CRM remain independent."
               : "Access is removed immediately. The recording, transcript, notes, and revisions are then permanently removed by the cleanup worker."}
           </p>
-          <button
+          <button data-insights="delete-meeting"
             className="danger-button full"
             onClick={() =>
               run(async () => {
@@ -2587,7 +2587,7 @@ export default function App() {
       {modal === "discard" && (
         <Dialog title="Discard saved recording?" onClose={() => setModal("")}>
           <p>This removes the recoverable audio stored on this device.</p>
-          <button
+          <button data-insights="discard-recording"
             className="danger-button full"
             onClick={() =>
               run(async () => {
@@ -2612,7 +2612,7 @@ export default function App() {
               onChange={(e) => setNewWorkspace(e.target.value)}
             />
           </label>
-          <button
+          <button data-insights="create-workspace"
             className="primary full"
             disabled={busy || !newWorkspace.trim()}
             onClick={() =>
@@ -2656,7 +2656,7 @@ export default function App() {
               onChange={(e) => setDeleteText(e.target.value)}
             />
           </label>
-          <button
+          <button data-insights="delete-account"
             className="danger-button full"
             disabled={deleteText !== "DELETE" || busy}
             onClick={() =>

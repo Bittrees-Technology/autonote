@@ -51,7 +51,7 @@ export function CrmSettings() {
                 : "Expires " + new Date(c.expires_at).toLocaleDateString()}
             </small>
           </span>
-          <button
+          <button data-insights="disconnect"
             className="text-button"
             disabled={busy}
             onClick={async () => {
@@ -71,7 +71,7 @@ export function CrmSettings() {
           </button>
         </div>
       ))}
-      <button
+      <button data-insights="connect-crm-destination"
         className="secondary"
         disabled={busy}
         onClick={async () => {
@@ -195,7 +195,7 @@ export function CrmPublish({
                 </span>
               </label>
             ))}
-          <button
+          <button data-insights="review-publication"
             className="primary full"
             disabled={
               !loaded ||
@@ -245,7 +245,7 @@ export function CrmPublish({
             Items previously published to this destination will be skipped.
             Existing CRM copies will not be overwritten.
           </p>
-          <button
+          <button data-insights="confirm-and-publish-to-crm"
             className="primary full"
             disabled={busy}
             onClick={async () => {
@@ -263,7 +263,7 @@ export function CrmPublish({
           >
             Confirm and publish to CRM
           </button>
-          <button
+          <button data-insights="back-to-selection"
             className="text-button"
             disabled={busy}
             onClick={() => setPreview(null)}

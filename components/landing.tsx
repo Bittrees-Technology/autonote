@@ -21,11 +21,11 @@ export function Landing({
 }) {
   return (
     <div className={styles.page}>
-      <a className={styles.skip} href="#main-content">
+      <a data-insights="navigate-/main-content" className={styles.skip} href="#main-content">
         Skip to content
       </a>
       <header className={styles.header}>
-        <a href="/" className={styles.brand} aria-label="AutoNote home">
+        <a data-insights="autonote-home" href="/" className={styles.brand} aria-label="AutoNote home">
           <span>
             <Activity size={24} />
           </span>
@@ -34,9 +34,9 @@ export function Landing({
           </b>
         </a>
         <nav aria-label="Main navigation">
-          <a href="#how-it-works">How it works</a>
-          <a href="#privacy">Privacy</a>
-          <button onClick={onStart}>
+          <a data-insights="navigate-/how-it-works" href="#how-it-works">How it works</a>
+          <a data-insights="navigate-/privacy" href="#privacy">Privacy</a>
+          <button data-insights="sign-in" onClick={onStart}>
             Sign in <ArrowRight size={16} />
           </button>
         </nav>
@@ -63,10 +63,10 @@ export function Landing({
               your team on the same page.
             </p>
             <div className={styles.actions}>
-              <button className={styles.primary} onClick={onStart}>
+              <button data-insights="start-taking-notes" className={styles.primary} onClick={onStart}>
                 Start taking notes <ArrowRight size={18} />
               </button>
-              <button className={styles.secondary} onClick={onExplore}>
+              <button data-insights="explore-a-sample" className={styles.secondary} onClick={onExplore}>
                 Explore a sample
               </button>
             </div>
@@ -189,7 +189,7 @@ export function Landing({
               sync to your account, where meetings start private. You choose who
               can see them.
             </p>
-            <a href="/privacy">
+            <a data-insights="navigate-/privacy" href="/privacy">
               Read the privacy details <ArrowRight size={17} />
             </a>
           </div>
@@ -260,7 +260,7 @@ export function Landing({
         <section className={styles.cta}>
           <h2>Make your next conversation count.</h2>
           <p>Start with one recording. Leave with something useful.</p>
-          <button className={styles.primary} onClick={onStart}>
+          <button data-insights="get-started-free" className={styles.primary} onClick={onStart}>
             Get started free <ArrowRight size={18} />
           </button>
         </section>
@@ -270,11 +270,11 @@ export function Landing({
           AutoNote <span className={styles.by}>by Bittrees</span>
         </span>
         <nav aria-label="Footer">
-          <a href="/privacy">Privacy</a>
-          <a href="https://github.com/Bittrees-Technology/autonote">
+          <a data-insights="navigate-/privacy" href="/privacy">Privacy</a>
+          <a data-insights="navigate-githubcom/bittrees-technology/autonote" href="https://github.com/Bittrees-Technology/autonote">
             Source code
           </a>
-          <button onClick={onExplore}>Sample workspace</button>
+          <button data-insights="sample-workspace" onClick={onExplore}>Sample workspace</button>
           <span>Free beta</span>
         </nav>
       </footer>

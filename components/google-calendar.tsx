@@ -66,7 +66,7 @@ export function GoogleCalendarSettings() {
           Upload in AutoNote. The free beta accepts up to 100 MB / 30 minutes.
           Automatic Drive import is not connected yet.
         </p>
-        <a
+        <a data-insights="navigate-supportgooglecom/meet/answer/9308681"
           href="https://support.google.com/meet/answer/9308681?hl=en"
           target="_blank"
           rel="noreferrer"
@@ -93,7 +93,7 @@ export function GoogleCalendarSettings() {
           meeting without connecting Google.
         </p>
       ) : !status.connected ? (
-        <button
+        <button data-insights="connect-google-calendar"
           className="secondary"
           disabled={busy}
           onClick={() =>
@@ -123,7 +123,7 @@ export function GoogleCalendarSettings() {
                 ? "Refresh meetings"
                 : "Load upcoming meetings"}
           </button>{" "}
-          <button
+          <button data-insights="disconnect-google"
             className="text-button"
             disabled={busy}
             onClick={() =>
@@ -193,7 +193,7 @@ export function GoogleCalendarSettings() {
                       Open Meet
                     </a>
                   </span>
-                  <button
+                  <button data-insights="remove"
                     className="text-button"
                     disabled={busy}
                     onClick={() =>
@@ -220,7 +220,7 @@ export function GoogleCalendarSettings() {
         </p>
       )}
       {!status && error && (
-        <button className="secondary" disabled={busy} onClick={() => run(load)}>
+        <button data-insights="try-again" className="secondary" disabled={busy} onClick={() => run(load)}>
           Try again
         </button>
       )}
