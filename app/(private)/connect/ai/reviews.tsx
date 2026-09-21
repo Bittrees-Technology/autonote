@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 type Api = (action: string, method?: string, body?: unknown) => Promise<any>;
 export default function Reviews({
   user,
@@ -13,6 +14,16 @@ export default function Reviews({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [confirmed, setConfirmed] = useState(false);
+  const params = useSearchParams();
+  const links = params.getAll("review");
+  const linkedId =
+    links.length === 1 &&
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
+      links[0],
+    )
+      ? links[0]
+      : "";
+  const invalidLink = links.length > 0 && !linkedId;
   const epoch = useRef(0),
     working = useRef(false);
   useEffect(() => {
@@ -38,6 +49,19 @@ export default function Reviews({
     }, 15000);
     return () => clearInterval(timer);
   }, [detail?.id, user.id]);
+  useEffect(() => {
+    setDetail(null);
+    setConfirmed(false);
+    setError("");
+    let active = true;
+    queueMicrotask(() => {
+      if (active && linkedId) void act(() => open(linkedId));
+    });
+    return () => {
+      active = false;
+      epoch.current++;
+    };
+  }, [linkedId, user.id]);
   async function act(fn: () => Promise<void>) {
     if (working.current) return;
     working.current = true;
@@ -81,6 +105,22 @@ export default function Reviews({
         action statuses are preserved. New actions and proposed owners/deadlines
         still require your normal AutoNote review. Nothing is sent to CRM here.
       </p>
+      {invalidLink && (
+        <p role="alert">
+          This review link is invalid. Load your draft reviews below.
+        </p>
+      )}
+      {linkedId && (
+        <p>
+          This link selects one draft; it does not approve a save.
+          <button
+            disabled={busy}
+            onClick={() => void act(() => open(linkedId))}
+          >
+            Reopen linked review
+          </button>
+        </p>
+      )}
       <button disabled={busy} onClick={() => void act(load)}>
         Load draft reviews
       </button>
