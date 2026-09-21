@@ -1,3 +1,4 @@
+import { aiSchema } from "./ai-schema";
 import { Pool, type PoolClient } from "pg";
 const globalDb = globalThis as unknown as { autonotePool?: Pool };
 export function pool() {
@@ -50,4 +51,5 @@ CREATE TABLE IF NOT EXISTS google_selections(user_id uuid REFERENCES google_conn
 ALTER TABLE meetings ADD COLUMN IF NOT EXISTS processing_mode text NOT NULL DEFAULT 'server';
 ALTER TABLE meetings ADD COLUMN IF NOT EXISTS ingestion_hash text;
 CREATE TABLE IF NOT EXISTS email_budget(period text PRIMARY KEY,hits int NOT NULL DEFAULT 0);
+${aiSchema}
 `;

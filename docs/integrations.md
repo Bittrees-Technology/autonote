@@ -29,3 +29,12 @@ The meeting creator selects an editable summary and accepted actions, reviews th
 Disconnect in AutoNote Settings or revoke in CRM at `/connect/autonote`. Published CRM copies remain independently editable and are not erased by disconnecting or deleting the source meeting. Account export does not include integration credentials.
 
 Set `CRM_URL` on AutoNote and `AUTONOTE_URL` on CRM to the corresponding origins. Production defaults are `https://crm.bittrees.org` and `https://autonote.bittrees.org`. For local testing use ports 3040 and 3050 respectively. Migrate both applications before deploying. Authorization codes are single-use and protected with PKCE; bearer tokens are hashed in CRM and encrypted in AutoNote.
+
+
+## Local Bittrees AI transcript grants (foundation)
+
+`AI_CONNECTOR_ENABLED` defaults to false. The source module supports a separate one-meeting `read_transcript` grant issued by the signed-in source user after current access checks. A PKCE-protected code expires after 60 seconds and exchanges once for a hashed bearer credential; the user-selected grant expires within 30 days. Grant creation, exchange and reads reject unavailable accounts, lost membership/sharing, deleted meetings and unready or invalid transcripts. Sharing rights are checked again after a meeting-lock wait. Revocation and idempotent bearer disconnect remain available with the feature disabled or source access lost.
+
+The bounded projection contains only meeting ID, title, language, version and timestamped transcript segments, with a projection hash for downstream invalidation. It excludes recording keys, recording bytes, existing notes and all Google/CRM credentials. Transcript transfer is capped at 1 MiB; larger or malformed transcripts fail explicitly. Account recovery revokes both accounts' AI grants rather than transferring them; account deletion clears grant credentials.
+
+This increment is source-module infrastructure, not an activated connector: source consent/routes, companion integration, cited generation and reviewed AutoNote saves remain pending. It grants no write or CRM publication action. The existing AutoNote-to-CRM exact-review and item-deduplication path remains the sole publication path for meeting content. Apply the additive schema migration before enabling future routes; no production flag or credential is activated by this change.

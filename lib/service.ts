@@ -1,3 +1,4 @@
+import { revokeAiForAccounts } from "./ai-schema";
 import { extractiveNotes } from "./extractive-notes";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -596,6 +597,7 @@ export async function accountExport(user: string) {
 export async function deleteAccount(user: string) {
   return transaction(async (db) => {
     await db.query("SELECT id FROM users WHERE id=$1 FOR UPDATE", [user]);
+    await revokeAiForAccounts(db, [user]);
     const ws = (
       await db.query(
         "SELECT workspace_id FROM members WHERE user_id=$1 ORDER BY workspace_id",

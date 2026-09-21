@@ -1,3 +1,4 @@
+import { revokeAiForAccounts } from "./ai-schema";
 import type { PoolClient } from "pg";
 import { transaction } from "./db";
 import {
@@ -132,6 +133,7 @@ export async function completeRecovery(req: Request, raw: string) {
     await db.query("DELETE FROM crm_previews WHERE user_id=ANY($1::uuid[])", [
       [u.id, r.source_id],
     ]);
+    await revokeAiForAccounts(db, [u.id, r.source_id]);
     await db.query("DELETE FROM members WHERE user_id=$1", [r.source_id]);
     await db.query("UPDATE users SET merged_into=$1 WHERE id=$2", [
       u.id,
