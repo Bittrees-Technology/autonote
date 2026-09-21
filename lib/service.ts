@@ -631,6 +631,13 @@ export async function deleteAccount(user: string) {
       "UPDATE meetings SET deleted_at=now(),status='deleting',version=version+1 WHERE creator_id=$1 AND deleted_at IS NULL",
       [user],
     );
+    // Clear other reviewers' copies only after workspace/meeting locks, preserving authority lock order.
+    await clearAiMeetingReviews(
+      db,
+      (
+        await db.query("SELECT id FROM meetings WHERE creator_id=$1", [user])
+      ).rows.map((row) => row.id),
+    );
     await db.query(
       "UPDATE jobs SET state='cancelled',lease_token=NULL WHERE meeting_id IN (SELECT id FROM meetings WHERE creator_id=$1)",
       [user],

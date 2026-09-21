@@ -27,7 +27,7 @@ export async function revokeAiForAccounts(db: PoolClient, users: string[]) {
       .rows[0].present
   )
     await db.query(
-      "UPDATE ai_reviews SET payload=NULL WHERE user_id=ANY($1::uuid[]) OR meeting_id IN (SELECT id FROM meetings WHERE creator_id=ANY($1::uuid[]))",
+      "UPDATE ai_reviews SET payload=NULL WHERE user_id=ANY($1::uuid[])",
       [users],
     );
 }

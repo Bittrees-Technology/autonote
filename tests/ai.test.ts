@@ -660,3 +660,40 @@ test("review receipt failure rolls back the meeting save and retry uses the same
     2,
   );
 });
+
+test("deleting a creator account clears another editor's pending meeting review", async () => {
+  const f = await fixture(),
+    reviews = await import("../lib/ai-reviews"),
+    { deleteAccount } = await import("../lib/service");
+  await pool().query("UPDATE members SET role='owner' WHERE user_id=$1", [
+    f.other,
+  ]);
+  await pool().query("INSERT INTO meeting_grants VALUES($1,$2)", [
+    f.id,
+    f.other,
+  ]);
+  const issued = await ai.authorize(f.other, f.input),
+    grant = await ai.exchange({ code: issued.code, verifier: f.verifier }),
+    source = await ai.read(grant.token, { meetingId: f.id });
+  await reviews.allowReviews(f.other, grant.grantId, true);
+  const prepared = await reviews.prepareReview(grant.token, {
+    operationId: randomUUID(),
+    meetingId: f.id,
+    version: 1,
+    projectionHash: source.projectionHash,
+    summary: [{ text: "Other editor draft", evidence: ["segment-1"] }],
+    actions: [],
+  });
+  await deleteAccount(f.user);
+  assert.equal(
+    (
+      await pool().query("SELECT payload FROM ai_reviews WHERE id=$1", [
+        prepared.reviewId,
+      ])
+    ).rows[0].payload,
+    null,
+  );
+  await assert.rejects(
+    reviews.saveReview(f.other, prepared.reviewId, prepared.digest),
+  );
+});
