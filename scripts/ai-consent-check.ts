@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
+import { createServer as createHttpsServer } from "node:https";
+import { request as httpRequest } from "node:http";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Pool } from "pg";
 import { chromium, expect } from "@playwright/test";
 import { pool, schema } from "../lib/db";
-import { hash, cookieName } from "../lib/auth";
+import { hash } from "../lib/auth";
 const database = process.env.DATABASE_URL!;
 if (!database.endsWith("/autonote_test"))
   throw Error("Dedicated browser test database required");
@@ -14,11 +19,14 @@ await admin.query("CREATE SCHEMA " + namespace);
 const url = new URL(database);
 url.searchParams.set("options", "-c search_path=" + namespace);
 process.env.DATABASE_URL = url.href;
-const origin = "http://127.0.0.1:3050",
+const origin = "https://127.0.0.1:3051",
+  backend = "http://127.0.0.1:3050",
   user = randomUUID(),
   workspace = randomUUID(),
   meeting = randomUUID(),
   session = "c".repeat(64);
+const certificates = mkdtempSync(join(tmpdir(), "autonote-browser-tls-"));
+let proxy: ReturnType<typeof createHttpsServer> | undefined;
 let server: ReturnType<typeof spawn> | undefined,
   browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
 try {
@@ -86,7 +94,7 @@ try {
   let ready = false;
   for (let i = 0; i < 100; i++) {
     try {
-      if ((await fetch(origin + "/api/health")).ok) {
+      if ((await fetch(backend + "/api/health")).ok) {
         ready = true;
         break;
       }
@@ -95,11 +103,64 @@ try {
     await new Promise((r) => setTimeout(r, 200));
   }
   assert.equal(ready, true, "Server did not start: " + logs);
+  execFileSync(
+    "openssl",
+    [
+      "req",
+      "-x509",
+      "-newkey",
+      "rsa:2048",
+      "-nodes",
+      "-keyout",
+      join(certificates, "key.pem"),
+      "-out",
+      join(certificates, "cert.pem"),
+      "-subj",
+      "/CN=localhost",
+      "-days",
+      "1",
+    ],
+    { stdio: "ignore" },
+  );
+  proxy = createHttpsServer(
+    {
+      key: readFileSync(join(certificates, "key.pem")),
+      cert: readFileSync(join(certificates, "cert.pem")),
+    },
+    (req, res) => {
+      const upstream = httpRequest(
+        backend + req.url,
+        { method: req.method, headers: req.headers },
+        (response) => {
+          res.writeHead(response.statusCode ?? 502, response.headers);
+          response.pipe(res);
+        },
+      );
+      upstream.on("error", () => {
+        res.writeHead(502);
+        res.end();
+      });
+      req.pipe(upstream);
+    },
+  );
+  await new Promise<void>((resolve) =>
+    proxy!.listen(3051, "127.0.0.1", resolve),
+  );
   browser = await chromium.launch();
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
+    ignoreHTTPSErrors: true,
   });
-  await context.addCookies([{ name: cookieName, value: session, url: origin }]);
+  await context.addCookies([
+    {
+      name: "__Host-autonote-session",
+      value: session,
+      url: origin,
+      secure: true,
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+  ]);
   const page = await context.newPage(),
     outgoing: string[] = [],
     errors: string[] = [];
@@ -162,7 +223,7 @@ try {
     ),
     false,
   );
-  const exchange = await fetch(origin + "/api/integrations/ai/exchange", {
+  const exchange = await fetch(backend + "/api/integrations/ai/exchange", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code, verifier }),
@@ -170,7 +231,7 @@ try {
   assert.equal(exchange.status, 200);
   const grant = await exchange.json();
   const read = () =>
-    fetch(origin + "/api/integrations/ai/read", {
+    fetch(backend + "/api/integrations/ai/read", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -206,13 +267,18 @@ try {
   assert.deepEqual(outgoing, []);
   assert.deepEqual(errors, []);
   assert.equal(
-    (await (await fetch(origin)).text()).includes("insights.bittrees.org"),
+    (await (await fetch(backend)).text()).includes("insights.bittrees.org"),
     true,
     "Ordinary app pages retain their existing analytics layout",
   );
   console.log("Private AutoNote consent browser checks passed.");
 } finally {
   await browser?.close();
+  if (proxy) {
+    proxy.closeAllConnections();
+    await new Promise<void>((resolve) => proxy!.close(() => resolve()));
+  }
+  rmSync(certificates, { recursive: true, force: true });
   if (server && server.exitCode === null) {
     const exited = new Promise<void>((resolve) =>
       server!.once("exit", () => resolve()),
