@@ -1,3 +1,9 @@
+body {
+  margin: 0;
+  background: #f6f7f4;
+  color: #17221d;
+  font-family: system-ui, sans-serif;
+}
 .ai-consent {
   max-width: 760px;
   margin: 48px auto;
