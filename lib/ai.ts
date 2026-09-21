@@ -31,7 +31,7 @@ type Grant = {
   expires_at: Date;
   revoked_at: Date | null;
 };
-async function authority(
+export async function aiAuthority(
   db: PoolClient,
   user: string,
   workspace: string,
@@ -55,7 +55,7 @@ async function authority(
     throw new HttpError(404, "Selected meeting unavailable.");
   return record;
 }
-function projection(record: Record<string, any>) {
+export function aiProjection(record: Record<string, any>) {
   if (record.status !== "ready")
     throw new HttpError(409, "Wait for the selected transcript to be ready.");
   const parsed = segments.safeParse(record.transcript);
@@ -92,7 +92,9 @@ export async function authorize(user: string, raw: unknown) {
   return transaction(async (db) => {
     // Serialize grant creation per account, including concurrent capacity checks.
     await db.query("SELECT id FROM users WHERE id=$1 FOR UPDATE", [user]);
-    projection(await authority(db, user, input.workspaceId, input.meetingId));
+    aiProjection(
+      await aiAuthority(db, user, input.workspaceId, input.meetingId),
+    );
     const count = (
       await db.query(
         "SELECT count(*) AS n FROM ai_grants WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>now()",
@@ -128,7 +130,7 @@ export async function authorize(user: string, raw: unknown) {
     };
   });
 }
-async function locked(
+export async function lockedAiGrant(
   db: PoolClient,
   bearer: string,
   field: "code_hash" | "token_hash",
@@ -138,7 +140,7 @@ async function locked(
     await db.query(`SELECT * FROM ai_grants WHERE ${field}=$1`, [hash(bearer)])
   ).rows[0] as Grant | undefined;
   if (!lookup) throw new HttpError(401, "Invalid AI connection.");
-  const record = await authority(
+  const record = await aiAuthority(
     db,
     lookup.user_id,
     lookup.workspace_id,
@@ -167,13 +169,13 @@ export async function exchange(raw: unknown) {
     })
     .parse(raw);
   return transaction(async (db) => {
-    const { grant, record } = await locked(db, input.code, "code_hash");
+    const { grant, record } = await lockedAiGrant(db, input.code, "code_hash");
     if (
       new Date(grant.code_expires).getTime() <= Date.now() ||
       challenge(input.verifier) !== grant.challenge
     )
       throw new HttpError(401, "Invalid or expired connection code.");
-    projection(record);
+    aiProjection(record);
     const bearer = token();
     await db.query(
       "UPDATE ai_grants SET code_hash=NULL,token_hash=$2 WHERE id=$1",
@@ -195,13 +197,13 @@ export async function read(bearer: string, raw: unknown) {
   requireAiEnabled();
   const input = z.strictObject({ meetingId: z.uuid() }).parse(raw);
   return transaction(async (db) => {
-    const { grant, record } = await locked(db, bearer, "token_hash");
+    const { grant, record } = await lockedAiGrant(db, bearer, "token_hash");
     if (input.meetingId !== grant.meeting_id)
       throw new HttpError(
         403,
         "This connection does not include that meeting.",
       );
-    const transcript = projection(record);
+    const transcript = aiProjection(record);
     await db.query("UPDATE ai_grants SET last_used_at=now() WHERE id=$1", [
       grant.id,
     ]);

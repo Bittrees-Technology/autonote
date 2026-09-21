@@ -1,4 +1,4 @@
-import { revokeAiForAccounts } from "./ai-schema";
+import { revokeAiForAccounts, clearAiMeetingReviews } from "./ai-schema";
 import { extractiveNotes } from "./extractive-notes";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -211,7 +211,12 @@ export async function completeUpload(user: string, id: string) {
     return { ok: true };
   });
 }
-export async function editMeeting(user: string, id: string, input: unknown) {
+export async function editMeeting(
+  user: string,
+  id: string,
+  input: unknown,
+  existingDb?: PoolClient,
+) {
   const data = z
     .object({
       version: z.number().int().positive(),
@@ -222,7 +227,7 @@ export async function editMeeting(user: string, id: string, input: unknown) {
       grantIds: z.array(uuid).max(100).optional(),
     })
     .parse(input);
-  return transaction(async (db) => {
+  const apply = async (db: PoolClient) => {
     const m = await meeting(user, id, true, db, true);
     if (m.version !== data.version)
       throw new HttpError(409, "This meeting changed. Refresh before saving.");
@@ -306,7 +311,8 @@ export async function editMeeting(user: string, id: string, input: unknown) {
       [m.workspace_id, user, id],
     );
     return { ok: true };
-  });
+  };
+  return existingDb ? apply(existingDb) : transaction(apply);
 }
 export async function retryMeeting(user: string, id: string) {
   return transaction(async (db) => {
@@ -362,6 +368,7 @@ export async function removeMeeting(user: string, id: string) {
       "UPDATE jobs SET state='cancelled',lease_token=NULL WHERE meeting_id=$1",
       [id],
     );
+    await clearAiMeetingReviews(db, [id]);
     if (m.processing_mode === "device") {
       await db.query("DELETE FROM revisions WHERE meeting_id=$1", [id]);
       await db.query("DELETE FROM crm_previews WHERE meeting_id=$1", [id]);
