@@ -359,7 +359,7 @@ export async function listReviews(user: string) {
     return [];
   return (
     await pool().query(
-      "SELECT id,meeting_id,created_at,expires_at,receipt,payload IS NULL AS cleared FROM ai_reviews WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100",
+      "SELECT id,meeting_id,created_at,expires_at,receipt,payload IS NULL AS cleared FROM ai_reviews WHERE user_id=$1 ORDER BY (payload IS NOT NULL AND receipt IS NULL) DESC,created_at DESC LIMIT 100",
       [user],
     )
   ).rows;

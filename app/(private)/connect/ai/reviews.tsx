@@ -84,6 +84,7 @@ export default function Reviews({
       <button disabled={busy} onClick={() => void act(load)}>
         Load draft reviews
       </button>
+      <p>Up to 100 reviews are shown, with pending drafts first.</p>
       {error && <p role="alert">{error}</p>}
       {items.map((item) => (
         <article key={item.id}>
