@@ -273,6 +273,54 @@ try {
     }),
   });
   assert.equal(staged.status, 201);
+  const stagedReview = await staged.json();
+  // A link cannot disclose an unknown review or authorize a save.
+  await page.goto(origin + "/connect/ai?review=" + randomUUID());
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Review exact additions", exact: true }),
+  ).toHaveCount(0);
+  await page.goto(origin + "/connect/ai?review=invalid");
+  await expect(
+    page.getByText(
+      "This review link is invalid. Load your draft reviews below.",
+    ),
+  ).toBeVisible();
+  await page.goto(
+    origin +
+      "/connect/ai?review=" +
+      stagedReview.reviewId +
+      "&review=" +
+      stagedReview.reviewId,
+  );
+  await expect(
+    page.getByText(
+      "This review link is invalid. Load your draft reviews below.",
+    ),
+  ).toBeVisible();
+  await page.goto(origin + "/connect/ai?review=" + stagedReview.reviewId);
+  await expect(
+    page.getByRole("heading", { name: "Review exact additions", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Save reviewed additions", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByLabel("I reviewed these additions and the meeting audience.", {
+      exact: true,
+    })
+    .check();
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await expect(
+    page.getByRole("heading", { name: "Review exact additions", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Reopen linked review", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Save reviewed additions", exact: true }),
+  ).toBeDisabled();
+  // The existing manual list remains usable alongside a direct link.
   await page
     .getByRole("button", { name: "Load draft reviews", exact: true })
     .click();
@@ -317,6 +365,13 @@ try {
   assert.equal(saved.version, 2);
   assert.equal(saved.notes.actions[0].status, "proposed");
   assert.match(saved.notes.summary, /s1: 0–4s/);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Saved to AutoNote", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Save reviewed additions", exact: true }),
+  ).toHaveCount(0);
 
   await page
     .getByRole("button", { name: "Revoke connection", exact: true })
@@ -325,6 +380,15 @@ try {
     page.getByText("Revoked · Expires", { exact: false }),
   ).toBeVisible();
   assert.equal((await read()).status, 401);
+  await page.reload();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Saved to AutoNote", exact: true }),
+  ).toHaveCount(0);
+  await page.goto(origin + "/connect/ai?challenge=" + challenge);
+  await expect(
+    page.getByText("Signed in as Synthetic AI reviewer.", { exact: false }),
+  ).toBeVisible();
   await page
     .getByRole("button", {
       name: "Refresh signed-in account and connections",
