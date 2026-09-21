@@ -1,0 +1,47 @@
+.ai-consent {
+  max-width: 760px;
+  margin: 48px auto;
+  padding: 24px;
+  line-height: 1.6;
+}
+.ai-consent h1,
+.ai-consent h2 {
+  margin: 1.2rem 0;
+}
+.ai-consent label {
+  display: block;
+  margin-top: 1rem;
+}
+.ai-consent select,
+.ai-consent input {
+  display: block;
+  max-width: 100%;
+  min-height: 40px;
+  margin-bottom: 1rem;
+}
+.ai-consent button {
+  margin: 0.6rem 0.6rem 0.6rem 0;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+}
+.ai-consent article {
+  padding: 1rem 0;
+  border-top: 1px solid #ddd;
+}
+.ai-consent code,
+.ai-consent output {
+  overflow-wrap: anywhere;
+}
+.ai-consent output {
+  display: block;
+  padding: 1rem;
+  background: #eee;
+  color: #111;
+}
+.ai-consent [role="alert"] {
+  color: #9d2828;
+}
+.ai-consent :focus-visible {
+  outline: 3px solid #267963;
+  outline-offset: 3px;
+}

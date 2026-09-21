@@ -1,4 +1,3 @@
-import InsightsScript from "next/script";
 import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
@@ -18,8 +17,7 @@ export const metadata: Metadata = {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}<InsightsScript src="https://insights.bittrees.org/consent.js" data-insights-site="autonote" strategy="afterInteractive" />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

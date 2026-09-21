@@ -5,11 +5,11 @@ import {
   forgetRecording,
   transcribeOnDevice,
   type LocalRecording,
-} from "../lib/device-recording";
-import { captureAudio } from "../lib/capture-audio";
-import { Landing } from "../components/landing";
-import { GoogleCalendarSettings } from "../components/google-calendar";
-import { CrmSettings, CrmPublish } from "../components/crm";
+} from "../../lib/device-recording";
+import { captureAudio } from "../../lib/capture-audio";
+import { Landing } from "../../components/landing";
+import { GoogleCalendarSettings } from "../../components/google-calendar";
+import { CrmSettings, CrmPublish } from "../../components/crm";
 import { useEffect, useRef, useState, useId } from "react";
 import {
   Activity,
@@ -41,11 +41,11 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import type { Meeting, Notes, Segment } from "../lib/model";
-import { demoMeeting } from "../lib/demo";
-import { walletIdentity, type EthereumProvider } from "../lib/auth-client";
-import { clearRecording, recordedChunks, saveChunk } from "../lib/recording";
-import { exportMeeting } from "../lib/export";
+import type { Meeting, Notes, Segment } from "../../lib/model";
+import { demoMeeting } from "../../lib/demo";
+import { walletIdentity, type EthereumProvider } from "../../lib/auth-client";
+import { clearRecording, recordedChunks, saveChunk } from "../../lib/recording";
+import { exportMeeting } from "../../lib/export";
 type Workspace = {
   id: string;
   name: string;

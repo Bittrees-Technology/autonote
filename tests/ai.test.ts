@@ -269,3 +269,137 @@ test("account cleanup revokes both linked identities and remains safe before the
     db.release();
   }
 });
+
+test("connection routes separate source sessions from bearer reads and enforce bounded consent", async () => {
+  const { GET, POST } =
+      await import("../app/api/integrations/ai/[action]/route"),
+    { hash, cookieName } = await import("../lib/auth"),
+    f = await fixture();
+  const session = "c".repeat(64);
+  await pool().query(
+    "INSERT INTO sessions(hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
+    [hash(session), f.user],
+  );
+  const origin = process.env.APP_URL!,
+    cookie = cookieName + "=" + session;
+  const call = (
+    action: string,
+    method = "GET",
+    body?: unknown,
+    headers: Record<string, string> = {},
+  ) =>
+    (method === "GET" ? GET : POST)(
+      new Request(origin + "/api/integrations/ai/" + action, {
+        method,
+        headers: {
+          origin,
+          cookie,
+          "Content-Type": "application/json",
+          ...headers,
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+      { params: Promise.resolve({ action }) },
+    );
+  assert.equal(
+    (await call("options", "GET", undefined, { cookie: "" })).status,
+    401,
+  );
+  const choices = await (await call("options")).json();
+  assert.equal(
+    choices.items.some((m: any) => m.id === f.id),
+    true,
+  );
+  assert.equal(JSON.stringify(choices).includes("SYNTHETIC_TRANSCRIPT"), false);
+  assert.equal(
+    (
+      await call(
+        "authorize",
+        "POST",
+        { ...f.input, subjectId: f.user },
+        { origin: "https://other.invalid" },
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await call("authorize", "POST", { ...f.input, subjectId: f.other }))
+      .status,
+    409,
+  );
+  assert.equal(
+    (
+      await call("authorize", "POST", {
+        ...f.input,
+        subjectId: f.user,
+        extra: "x".repeat(17000),
+      })
+    ).status,
+    413,
+  );
+  const issuedResponse = await call("authorize", "POST", {
+    ...f.input,
+    subjectId: f.user,
+  });
+  assert.equal(issuedResponse.status, 201);
+  assert.equal(
+    issuedResponse.headers.get("cache-control"),
+    "private, no-store",
+  );
+  const issued = await issuedResponse.json();
+  const exchange = await call(
+    "exchange",
+    "POST",
+    { code: issued.code, verifier: f.verifier },
+    { cookie: "", origin: "" },
+  );
+  assert.equal(exchange.status, 200);
+  const grant = await exchange.json();
+  assert.equal((await call("read", "POST", { meetingId: f.id })).status, 401);
+  const read = await call(
+    "read",
+    "POST",
+    { meetingId: f.id },
+    { cookie: "", origin: "", authorization: "Bearer " + grant.token },
+  );
+  assert.equal(read.status, 200);
+  assert.equal(
+    (
+      await call(
+        "authorize",
+        "POST",
+        { ...f.input, subjectId: f.user },
+        { cookie: "", authorization: "Bearer " + grant.token },
+      )
+    ).status,
+    401,
+  );
+  process.env.AI_CONNECTOR_ENABLED = "false";
+  assert.equal(
+    (
+      await call(
+        "read",
+        "POST",
+        { meetingId: f.id },
+        { authorization: "Bearer " + grant.token },
+      )
+    ).status,
+    404,
+  );
+  assert.equal(
+    (await call("revoke", "POST", { grantId: grant.grantId })).status,
+    200,
+  );
+  assert.equal(
+    (
+      await call(
+        "disconnect",
+        "POST",
+        {},
+        { cookie: "", authorization: "Bearer " + grant.token },
+      )
+    ).status,
+    200,
+  );
+  process.env.AI_CONNECTOR_ENABLED = "true";
+});

@@ -37,4 +37,13 @@ Set `CRM_URL` on AutoNote and `AUTONOTE_URL` on CRM to the corresponding origins
 
 The bounded projection contains only meeting ID, title, language, version and timestamped transcript segments, with a projection hash for downstream invalidation. It excludes recording keys, recording bytes, existing notes and all Google/CRM credentials. Transcript transfer is capped at 1 MiB; larger or malformed transcripts fail explicitly. Account recovery revokes both accounts' AI grants rather than transferring them; account deletion clears grant credentials.
 
-This increment is source-module infrastructure, not an activated connector: source consent/routes, companion integration, cited generation and reviewed AutoNote saves remain pending. It grants no write or CRM publication action. The existing AutoNote-to-CRM exact-review and item-deduplication path remains the sole publication path for meeting content. Apply the additive schema migration before enabling future routes; no production flag or credential is activated by this change.
+The private consent and connection routes described below now expose this foundation. Companion integration, cited generation and reviewed AutoNote saves remain pending. It grants no write or CRM publication action. The existing AutoNote-to-CRM exact-review and item-deduplication path remains the sole publication path for meeting content. Apply the additive schema migration before enabling future routes; no production flag or credential is activated by this change.
+
+ 
+## Private AI consent and connection routes
+
+The companion opens /connect/ai with a PKCE challenge, never a bearer credential. The user signs into AutoNote, loads currently permitted ready meetings, chooses one and an expiry, reviews transcript-only scope and explicitly approves. Consent binds the displayed source account. A single-use code is displayed for at most 60 seconds for manual transfer to the companion; it is not stored in URLs or browser storage. Users can inspect expiry/last use and revoke their own grants even when new grants are disabled.
+
+The private page uses a nonce-based same-origin CSP, no-referrer/no-store headers and a separate layout without the ordinary app's analytics script. The ordinary app/privacy URLs remain unchanged. Session-and-origin-authorized endpoints own consent/revoke; bearer exchange/read/disconnect are distinct, bounded and rate-limited. Bearer possession cannot approve a connection or change its selected meeting. The choices endpoint returns only permitted meeting labels/IDs, with explicit truncation after 100 results.
+
+GitHub browser tests exercise synthetic source consent, one-time exchange, transcript read, revoke, keyboard controls, narrow-screen layout and absence of third-party requests on this page. This does not activate production AI access or complete companion/local-model pilot acceptance. The additive migration and source feature flag remain operator release steps.
