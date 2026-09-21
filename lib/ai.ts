@@ -223,6 +223,14 @@ export async function read(bearer: string, raw: unknown) {
   });
 }
 export async function list(user: string) {
+  if (
+    !(
+      await pool().query(
+        "SELECT to_regclass('ai_grants') IS NOT NULL AS present",
+      )
+    ).rows[0].present
+  )
+    return [];
   return (
     await pool().query(
       "SELECT id,workspace_id,meeting_id,created_at,expires_at,last_used_at,revoked_at FROM ai_grants WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100",
@@ -246,4 +254,15 @@ export async function disconnect(bearer: string) {
     [hash(bearer)],
   );
   return { revoked: true };
+}
+
+export async function choices(user: string) {
+  requireAiEnabled();
+  const rows = (
+    await pool().query(
+      "SELECT m.id,m.workspace_id,m.title,m.version,w.name AS workspace_name FROM meetings m JOIN members b ON b.workspace_id=m.workspace_id AND b.user_id=$1 JOIN workspaces w ON w.id=m.workspace_id WHERE m.deleted_at IS NULL AND m.status='ready' AND (m.creator_id=$1 OR m.visibility='workspace' OR EXISTS(SELECT 1 FROM meeting_grants g WHERE g.meeting_id=m.id AND g.user_id=$1)) ORDER BY m.created_at DESC,m.id LIMIT 101",
+      [user],
+    )
+  ).rows;
+  return { items: rows.slice(0, 100), truncated: rows.length > 100 };
 }
