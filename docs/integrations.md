@@ -39,7 +39,7 @@ The bounded projection contains only meeting ID, title, language, version and ti
 
 The private consent and connection routes described below now expose this foundation. Companion integration, cited generation and reviewed AutoNote saves remain pending. It grants no write or CRM publication action. The existing AutoNote-to-CRM exact-review and item-deduplication path remains the sole publication path for meeting content. Apply the additive schema migration before enabling future routes; no production flag or credential is activated by this change.
 
- 
+
 ## Private AI consent and connection routes
 
 The companion opens /connect/ai with a PKCE challenge, never a bearer credential. The user signs into AutoNote, loads currently permitted ready meetings, chooses one and an expiry, reviews transcript-only scope and explicitly approves. Consent binds the displayed source account. A single-use code is displayed for at most 60 seconds for manual transfer to the companion; it is not stored in URLs or browser storage. Users can inspect expiry/last use and revoke their own grants even when new grants are disabled.
