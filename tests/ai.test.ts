@@ -390,16 +390,310 @@ test("connection routes separate source sessions from bearer reads and enforce b
     (await call("revoke", "POST", { grantId: grant.grantId })).status,
     200,
   );
+  const disconnected = await call(
+    "disconnect",
+    "POST",
+    {},
+    { cookie: "", authorization: "Bearer " + grant.token },
+  );
+  assert.equal(disconnected.status, 200);
+  assert.deepEqual(await disconnected.json(), { ok: true });
+  process.env.AI_CONNECTOR_ENABLED = "true";
+});
+
+async function reviewFixture() {
+  const reviews = await import("../lib/ai-reviews"),
+    f = await fixture();
+  const issued = await ai.authorize(f.user, f.input),
+    grant = await ai.exchange({ code: issued.code, verifier: f.verifier });
+  const source = await ai.read(grant.token, { meetingId: f.id });
+  const proposal = {
+    operationId: randomUUID(),
+    meetingId: f.id,
+    version: 1,
+    projectionHash: source.projectionHash,
+    summary: [{ text: "Synthetic summary", evidence: ["segment-1"] }],
+    actions: [
+      {
+        text: "Prepare draft",
+        evidence: ["segment-1"],
+        owner: "Suggested owner",
+        dueDate: null,
+      },
+    ],
+  };
+  return { ...f, reviews, grant, proposal };
+}
+test("AI reviewed saves require separate source permission and preserve existing notes with idempotent receipts", async () => {
+  const f = await reviewFixture();
+  await assert.rejects(f.reviews.prepareReview(f.grant.token, f.proposal));
+  await assert.rejects(f.reviews.allowReviews(f.other, f.grant.grantId, true));
+  await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+  const previous = {
+    summary: "Existing summary",
+    topics: [],
+    decisions: [],
+    actions: [
+      {
+        id: "existing",
+        text: "Reviewed action",
+        evidence: ["segment-1"],
+        owner: null,
+        dueDate: null,
+        status: "completed",
+      },
+    ],
+    questions: [],
+    recommendations: [],
+  };
+  await pool().query("UPDATE meetings SET notes=$2 WHERE id=$1", [
+    f.id,
+    previous,
+  ]);
+  const prepared = await f.reviews.prepareReview(f.grant.token, f.proposal);
+  assert.equal(
+    (await f.reviews.prepareReview(f.grant.token, f.proposal)).reviewId,
+    prepared.reviewId,
+  );
+  await assert.rejects(
+    f.reviews.prepareReview(f.grant.token, {
+      ...f.proposal,
+      summary: [{ text: "Changed", evidence: ["segment-1"] }],
+    }),
+  );
+  const detail = await f.reviews.reviewDetail(f.user, prepared.reviewId);
+  assert.equal(detail.notes!.actions[0].status, "completed");
+  assert.equal(detail.notes!.actions[1].status, "proposed");
+  assert.match(detail.notes!.summary, /segment-1: 1–4s/);
+  await assert.rejects(
+    f.reviews.saveReview(f.other, prepared.reviewId, prepared.digest),
+  );
+  await assert.rejects(
+    f.reviews.saveReview(f.user, prepared.reviewId, "0".repeat(64)),
+  );
+  const [one, two] = await Promise.all([
+    f.reviews.saveReview(f.user, prepared.reviewId, prepared.digest),
+    f.reviews.saveReview(f.user, prepared.reviewId, prepared.digest),
+  ]);
+  assert.deepEqual(one, two);
+  assert.equal(one.version, 2);
+  const record = (
+    await pool().query("SELECT notes,version FROM meetings WHERE id=$1", [f.id])
+  ).rows[0];
+  assert.equal(record.version, 2);
+  assert.equal(record.notes.actions.length, 2);
+  assert.deepEqual(record.notes.actions[0], previous.actions[0]);
+  assert.match(record.notes.summary, /Existing summary/);
   assert.equal(
     (
-      await call(
-        "disconnect",
-        "POST",
-        {},
-        { cookie: "", authorization: "Bearer " + grant.token },
-      )
-    ).status,
-    200,
+      await pool().query("SELECT payload FROM ai_reviews WHERE id=$1", [
+        prepared.reviewId,
+      ])
+    ).rows[0].payload,
+    null,
   );
-  process.env.AI_CONNECTOR_ENABLED = "true";
+  await pool().query("UPDATE meetings SET version=version+1 WHERE id=$1", [
+    f.id,
+  ]);
+  assert.deepEqual(
+    await f.reviews.saveReview(f.user, prepared.reviewId, prepared.digest),
+    one,
+  );
+  assert.deepEqual(
+    (await f.reviews.prepareReview(f.grant.token, f.proposal)).receipt,
+    one,
+  );
+  assert.equal(
+    (
+      await pool().query(
+        "SELECT count(*) n FROM crm_previews WHERE meeting_id=$1",
+        [f.id],
+      )
+    ).rows[0].n,
+    "0",
+  );
+});
+test("AI review save rejects changed source, expired review, disabled permission, missing evidence and stale notes", async () => {
+  for (const change of [
+    "version",
+    "projection",
+    "expired",
+    "permission",
+    "revoke",
+    "viewer",
+    "deleted",
+  ]) {
+    const f = await reviewFixture();
+    await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+    const prepared = await f.reviews.prepareReview(f.grant.token, f.proposal);
+    if (change === "version")
+      await pool().query("UPDATE meetings SET version=version+1 WHERE id=$1", [
+        f.id,
+      ]);
+    if (change === "projection")
+      await pool().query(
+        "UPDATE meetings SET title='Changed without version' WHERE id=$1",
+        [f.id],
+      );
+    if (change === "expired")
+      await pool().query(
+        "UPDATE ai_reviews SET expires_at=now()-interval '1 second' WHERE id=$1",
+        [prepared.reviewId],
+      );
+    if (change === "permission") {
+      await f.reviews.allowReviews(f.user, f.grant.grantId, false);
+      await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+    }
+    if (change === "revoke") await ai.revoke(f.user, f.grant.grantId);
+    if (change === "viewer")
+      await pool().query("UPDATE members SET role='viewer' WHERE user_id=$1", [
+        f.user,
+      ]);
+    if (change === "deleted")
+      await f.reviews.deleteReview(f.user, prepared.reviewId);
+    await assert.rejects(
+      f.reviews.saveReview(f.user, prepared.reviewId, prepared.digest),
+      change,
+    );
+    assert.equal(
+      (await pool().query("SELECT notes FROM meetings WHERE id=$1", [f.id]))
+        .rows[0].notes,
+      null,
+    );
+  }
+  const f = await reviewFixture();
+  await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+  await assert.rejects(
+    f.reviews.prepareReview(f.grant.token, {
+      ...f.proposal,
+      actions: [{ ...f.proposal.actions[0], evidence: ["missing"] }],
+    }),
+  );
+  await assert.rejects(
+    f.reviews.prepareReview(f.grant.token, { ...f.proposal, approved: true }),
+  );
+  await pool().query("UPDATE meetings SET notes_stale=true WHERE id=$1", [
+    f.id,
+  ]);
+  await assert.rejects(f.reviews.prepareReview(f.grant.token, f.proposal));
+});
+test("meeting and account cleanup erase pending review content, including rolling-deployment cleanup", async () => {
+  const { removeMeeting } = await import("../lib/service"),
+    { revokeAiForAccounts, clearAiMeetingReviews } =
+      await import("../lib/ai-schema");
+  for (const account of [false, true]) {
+    const f = await reviewFixture();
+    await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+    const prepared = await f.reviews.prepareReview(f.grant.token, f.proposal);
+    if (account) {
+      const db = await pool().connect();
+      try {
+        await revokeAiForAccounts(db, [f.user]);
+      } finally {
+        db.release();
+      }
+    } else await removeMeeting(f.user, f.id);
+    assert.equal(
+      (
+        await pool().query("SELECT payload FROM ai_reviews WHERE id=$1", [
+          prepared.reviewId,
+        ])
+      ).rows[0].payload,
+      null,
+    );
+    await assert.rejects(
+      f.reviews.saveReview(f.user, prepared.reviewId, prepared.digest),
+    );
+  }
+  const db = await pool().connect();
+  try {
+    await db.query("BEGIN");
+    await db.query(
+      "ALTER TABLE ai_reviews RENAME TO temporarily_unmigrated_ai_reviews",
+    );
+    await clearAiMeetingReviews(db, [randomUUID()]);
+    await revokeAiForAccounts(db, [randomUUID()]);
+    await db.query("ROLLBACK");
+  } finally {
+    db.release();
+  }
+});
+
+test("review receipt failure rolls back the meeting save and retry uses the same operation", async () => {
+  const f = await reviewFixture();
+  await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+  const prepared = await f.reviews.prepareReview(f.grant.token, f.proposal);
+  await pool().query(
+    `CREATE FUNCTION fail_review_receipt() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.receipt IS NOT NULL THEN RAISE EXCEPTION 'synthetic receipt failure'; END IF; RETURN NEW; END $$`,
+  );
+  await pool().query(
+    "CREATE TRIGGER fail_review_receipt BEFORE UPDATE ON ai_reviews FOR EACH ROW EXECUTE FUNCTION fail_review_receipt()",
+  );
+  try {
+    await assert.rejects(
+      f.reviews.saveReview(f.user, prepared.reviewId, prepared.digest),
+      /synthetic receipt failure/,
+    );
+    const record = (
+      await pool().query("SELECT notes,version FROM meetings WHERE id=$1", [
+        f.id,
+      ])
+    ).rows[0];
+    assert.equal(record.notes, null);
+    assert.equal(record.version, 1);
+    assert.equal(
+      (
+        await pool().query(
+          "SELECT count(*) n FROM revisions WHERE meeting_id=$1",
+          [f.id],
+        )
+      ).rows[0].n,
+      "0",
+    );
+  } finally {
+    await pool().query("DROP TRIGGER fail_review_receipt ON ai_reviews");
+    await pool().query("DROP FUNCTION fail_review_receipt()");
+  }
+  assert.equal(
+    (await f.reviews.saveReview(f.user, prepared.reviewId, prepared.digest))
+      .version,
+    2,
+  );
+});
+
+test("deleting a creator account clears another editor's pending meeting review", async () => {
+  const f = await fixture(),
+    reviews = await import("../lib/ai-reviews"),
+    { deleteAccount } = await import("../lib/service");
+  await pool().query("UPDATE members SET role='owner' WHERE user_id=$1", [
+    f.other,
+  ]);
+  await pool().query("INSERT INTO meeting_grants VALUES($1,$2)", [
+    f.id,
+    f.other,
+  ]);
+  const issued = await ai.authorize(f.other, f.input),
+    grant = await ai.exchange({ code: issued.code, verifier: f.verifier }),
+    source = await ai.read(grant.token, { meetingId: f.id });
+  await reviews.allowReviews(f.other, grant.grantId, true);
+  const prepared = await reviews.prepareReview(grant.token, {
+    operationId: randomUUID(),
+    meetingId: f.id,
+    version: 1,
+    projectionHash: source.projectionHash,
+    summary: [{ text: "Other editor draft", evidence: ["segment-1"] }],
+    actions: [],
+  });
+  await deleteAccount(f.user);
+  assert.equal(
+    (
+      await pool().query("SELECT payload FROM ai_reviews WHERE id=$1", [
+        prepared.reviewId,
+      ])
+    ).rows[0].payload,
+    null,
+  );
+  await assert.rejects(
+    reviews.saveReview(f.other, prepared.reviewId, prepared.digest),
+  );
 });

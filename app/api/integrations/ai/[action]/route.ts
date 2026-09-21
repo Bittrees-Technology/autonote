@@ -76,7 +76,8 @@ async function handle(
       await rateLimit("ai-bearer:" + bearer, 100);
       if (action === "disconnect") {
         z.strictObject({}).parse(input);
-        return json(await ai.disconnect(bearer));
+        await ai.disconnect(bearer);
+        return json({ ok: true });
       }
       return json(await ai.read(bearer, input));
     }
