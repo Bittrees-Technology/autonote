@@ -23,21 +23,21 @@ export default function Reviews({
     };
     window.addEventListener("blur", hide);
     document.addEventListener("visibilitychange", hide);
-    useEffect(() => {
-      if (!detail?.id || detail.receipt) return;
-      const id = detail.id;
-      const timer = setInterval(() => {
-        if (!working.current && !document.hidden && document.hasFocus())
-          void act(() => open(id));
-      }, 15000);
-      return () => clearInterval(timer);
-    }, [detail?.id, user.id]);
     return () => {
       hide();
       window.removeEventListener("blur", hide);
       document.removeEventListener("visibilitychange", hide);
     };
   }, [user.id]);
+  useEffect(() => {
+    if (!detail?.id || detail.receipt) return;
+    const id = detail.id;
+    const timer = setInterval(() => {
+      if (!working.current && !document.hidden && document.hasFocus())
+        void act(() => open(id));
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [detail?.id, user.id]);
   async function act(fn: () => Promise<void>) {
     if (working.current) return;
     working.current = true;
