@@ -390,17 +390,14 @@ test("connection routes separate source sessions from bearer reads and enforce b
     (await call("revoke", "POST", { grantId: grant.grantId })).status,
     200,
   );
-  assert.equal(
-    (
-      await call(
-        "disconnect",
-        "POST",
-        {},
-        { cookie: "", authorization: "Bearer " + grant.token },
-      )
-    ).status,
-    200,
+  const disconnected = await call(
+    "disconnect",
+    "POST",
+    {},
+    { cookie: "", authorization: "Bearer " + grant.token },
   );
+  assert.equal(disconnected.status, 200);
+  assert.deepEqual(await disconnected.json(), { ok: true });
   process.env.AI_CONNECTOR_ENABLED = "true";
 });
 
