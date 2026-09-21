@@ -890,3 +890,20 @@ test("review routes separate bearer staging from account-bound source approval a
     process.env.AI_CONNECTOR_ENABLED = "true";
   }
 });
+
+test("grant listing stays available before the review permission column is migrated", async () => {
+  const f = await reviewFixture();
+  await pool().query(
+    "ALTER TABLE ai_grants RENAME COLUMN review_epoch TO temporarily_unmigrated_review_epoch",
+  );
+  try {
+    const rows = await ai.list(f.user);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].reviews_enabled, false);
+    assert.equal(rows[0].id, f.grant.grantId);
+  } finally {
+    await pool().query(
+      "ALTER TABLE ai_grants RENAME COLUMN temporarily_unmigrated_review_epoch TO review_epoch",
+    );
+  }
+});
