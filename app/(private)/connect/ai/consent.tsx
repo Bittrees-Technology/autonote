@@ -1,4 +1,5 @@
 "use client";
+import Reviews from "./reviews";
 import { useEffect, useRef, useState } from "react";
 type Choice = {
   id: string;
@@ -268,6 +269,34 @@ export default function Consent() {
                   : "Not yet used"}
               </p>
               {!grant.revoked_at && (
+                <>
+                  <p>
+                    Draft review uploads:{" "}
+                    {grant.reviews_enabled ? "Enabled" : "Disabled"}. Each save
+                    still requires your exact review here.
+                  </p>
+                  <button
+                    disabled={busy || (!enabled && !grant.reviews_enabled)}
+                    onClick={() =>
+                      void act(async () => {
+                        await api(
+                          grant.reviews_enabled
+                            ? "review-disable"
+                            : "review-enable",
+                          "POST",
+                          { subjectId: user.id, grantId: grant.id },
+                        );
+                        await refresh();
+                      })
+                    }
+                  >
+                    {grant.reviews_enabled
+                      ? "Disable draft review uploads"
+                      : "Enable draft review uploads"}
+                  </button>
+                </>
+              )}
+              {!grant.revoked_at && (
                 <button
                   disabled={busy}
                   onClick={() =>
@@ -284,6 +313,7 @@ export default function Consent() {
           ))}
         </section>
       )}
+      {user && <Reviews key={user.id} user={user} api={api} />}
     </main>
   );
 }

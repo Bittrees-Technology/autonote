@@ -1,3 +1,4 @@
+import * as reviews from "../../../../../lib/ai-reviews";
 import { z, ZodError } from "zod";
 import * as ai from "../../../../../lib/ai";
 import { currentUser, checkOrigin, rateLimit } from "../../../../../lib/auth";
@@ -13,8 +14,8 @@ const json = (body: unknown, status = 200) =>
       "X-Content-Type-Options": "nosniff",
     },
   });
-async function body(req: Request) {
-  if (Number(req.headers.get("content-length") ?? 0) > 16384)
+async function body(req: Request, limit = 16384) {
+  if (Number(req.headers.get("content-length") ?? 0) > limit)
     throw new HttpError(413, "Request too large.");
   const reader = req.body?.getReader();
   if (!reader) return {};
@@ -25,7 +26,7 @@ async function body(req: Request) {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.length;
-      if (size > 16384) throw new HttpError(413, "Request too large.");
+      if (size > limit) throw new HttpError(413, "Request too large.");
       chunks.push(value);
     }
   } finally {
@@ -45,7 +46,14 @@ async function handle(
     const { action } = await params;
     if (!process.env.DATABASE_URL)
       throw new HttpError(503, "AutoNote accounts are not configured.");
-    const reducing = ["grants", "revoke", "disconnect"].includes(action);
+    const reducing = [
+      "grants",
+      "revoke",
+      "disconnect",
+      "reviews",
+      "review-disable",
+      "review-delete",
+    ].includes(action);
     if (
       !reducing &&
       (process.env.AUTONOTE_MODE === "demo" ||
@@ -55,9 +63,21 @@ async function handle(
         503,
         "AI connections are unavailable in preview mode.",
       );
-    if (["exchange", "read", "disconnect"].includes(action)) {
+    if (
+      [
+        "exchange",
+        "read",
+        "disconnect",
+        "review-prepare",
+        "review-status",
+        "review-receipt",
+      ].includes(action)
+    ) {
       if (req.method !== "POST") throw new HttpError(405, "Use POST.");
-      const input = await body(req);
+      const input = await body(
+        req,
+        action === "review-prepare" ? 65536 : 16384,
+      );
       if (action === "exchange") {
         ai.requireAiEnabled();
         const exchange = z
@@ -79,6 +99,18 @@ async function handle(
         await ai.disconnect(bearer);
         return json({ ok: true });
       }
+      if (action === "review-prepare")
+        return json(await reviews.prepareReview(bearer, input), 201);
+      if (action === "review-status") {
+        z.strictObject({}).parse(input);
+        return json(await reviews.reviewStatus(bearer));
+      }
+      if (action === "review-receipt") {
+        const { operationId } = z
+          .strictObject({ operationId: z.uuid() })
+          .parse(input);
+        return json(await reviews.reviewReceipt(bearer, operationId));
+      }
       return json(await ai.read(bearer, input));
     }
     const user = await currentUser(req);
@@ -89,6 +121,51 @@ async function handle(
         items: await ai.list(user!.id),
         enabled: process.env.AI_CONNECTOR_ENABLED === "true",
       });
+    if (action === "reviews" && req.method === "GET")
+      return json({ items: await reviews.listReviews(user!.id) });
+    if (
+      [
+        "review-enable",
+        "review-disable",
+        "review-detail",
+        "review-save",
+        "review-delete",
+      ].includes(action) &&
+      req.method === "POST"
+    ) {
+      const { subjectId, ...input } = z
+        .object({ subjectId: z.uuid() })
+        .passthrough()
+        .parse(await body(req));
+      if (subjectId !== user!.id)
+        throw new HttpError(409, "Signed-in account changed. Review again.");
+      await rateLimit("ai-review:" + user!.id, 100);
+      if (action === "review-enable" || action === "review-disable") {
+        const { grantId } = z.strictObject({ grantId: z.uuid() }).parse(input);
+        return json(
+          await reviews.allowReviews(
+            user!.id,
+            grantId,
+            action === "review-enable",
+          ),
+        );
+      }
+      if (action === "review-save") {
+        const { reviewId, digest } = z
+          .strictObject({
+            reviewId: z.uuid(),
+            digest: z.string().regex(/^[a-f0-9]{64}$/),
+          })
+          .parse(input);
+        return json(await reviews.saveReview(user!.id, reviewId, digest));
+      }
+      const { reviewId } = z.strictObject({ reviewId: z.uuid() }).parse(input);
+      return json(
+        action === "review-delete"
+          ? await reviews.deleteReview(user!.id, reviewId)
+          : await reviews.reviewDetail(user!.id, reviewId),
+      );
+    }
     if (action === "options" && req.method === "GET")
       return json(await ai.choices(user!.id));
     if (action === "authorize" && req.method === "POST") {
