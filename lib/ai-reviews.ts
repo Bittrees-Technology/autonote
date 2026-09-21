@@ -308,3 +308,59 @@ export async function deleteReview(user: string, id: string) {
   if (!result.rowCount) throw new HttpError(404, "Review not found.");
   return { deleted: true };
 }
+
+export async function reviewStatus(bearer: string) {
+  requireAiEnabled();
+  return transaction(async (db) => {
+    const { grant } = await lockedAiGrant(db, bearer, "token_hash");
+    await meeting(grant.user_id, grant.meeting_id, true, db);
+    const row = (
+      await db.query("SELECT review_epoch FROM ai_grants WHERE id=$1", [
+        grant.id,
+      ])
+    ).rows[0];
+    return {
+      grantId: grant.id,
+      meetingId: grant.meeting_id,
+      enabled: !!row.review_epoch,
+      expiresAt: grant.expires_at,
+    };
+  });
+}
+export async function reviewReceipt(bearer: string, operationId: string) {
+  requireAiEnabled();
+  z.uuid().parse(operationId);
+  return transaction(async (db) => {
+    const { grant } = await lockedAiGrant(db, bearer, "token_hash");
+    const row = (
+      await db.query(
+        "SELECT id,digest,expires_at,receipt,payload IS NULL AS cleared FROM ai_reviews WHERE user_id=$1 AND meeting_id=$2 AND operation_id=$3",
+        [grant.user_id, grant.meeting_id, operationId],
+      )
+    ).rows[0];
+    if (!row) throw new HttpError(404, "Review not found.");
+    return {
+      reviewId: row.id,
+      digest: row.digest,
+      expiresAt: row.expires_at,
+      receipt: row.receipt,
+      deleted: row.cleared && !row.receipt,
+    };
+  });
+}
+export async function listReviews(user: string) {
+  if (
+    !(
+      await pool().query(
+        "SELECT to_regclass('ai_reviews') IS NOT NULL AS present",
+      )
+    ).rows[0].present
+  )
+    return [];
+  return (
+    await pool().query(
+      "SELECT id,meeting_id,created_at,expires_at,receipt,payload IS NULL AS cleared FROM ai_reviews WHERE user_id=$1 ORDER BY (payload IS NOT NULL AND receipt IS NULL) DESC,created_at DESC LIMIT 100",
+      [user],
+    )
+  ).rows;
+}

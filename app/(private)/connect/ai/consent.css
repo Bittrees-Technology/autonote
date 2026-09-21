@@ -51,3 +51,11 @@ body {
   outline: 3px solid #267963;
   outline-offset: 3px;
 }
+.ai-consent pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.ai-consent p {
+  overflow-wrap: anywhere;
+}

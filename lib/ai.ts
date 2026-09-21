@@ -235,7 +235,7 @@ export async function list(user: string) {
     return [];
   return (
     await pool().query(
-      "SELECT id,workspace_id,meeting_id,created_at,expires_at,last_used_at,revoked_at FROM ai_grants WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100",
+      "SELECT id,workspace_id,meeting_id,created_at,expires_at,last_used_at,revoked_at,(to_jsonb(ai_grants)->>'review_epoch') IS NOT NULL AS reviews_enabled FROM ai_grants WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100",
       [user],
     )
   ).rows;

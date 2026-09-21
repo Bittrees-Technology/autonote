@@ -697,3 +697,213 @@ test("deleting a creator account clears another editor's pending meeting review"
     reviews.saveReview(f.other, prepared.reviewId, prepared.digest),
   );
 });
+
+test("review routes separate bearer staging from account-bound source approval and guarded receipt lookup", async () => {
+  const f = await reviewFixture(),
+    { GET, POST } = await import("../app/api/integrations/ai/[action]/route"),
+    { hash, cookieName } = await import("../lib/auth");
+  const session = "d".repeat(64);
+  await pool().query(
+    "INSERT INTO sessions(hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
+    [hash(session), f.user],
+  );
+  const origin = process.env.APP_URL!;
+  const call = (
+    action: string,
+    body?: unknown,
+    headers: Record<string, string> = {},
+    method = "POST",
+  ) =>
+    (method === "GET" ? GET : POST)(
+      new Request(origin + "/api/integrations/ai/" + action, {
+        method,
+        headers: {
+          origin,
+          cookie: cookieName + "=" + session,
+          "Content-Type": "application/json",
+          ...headers,
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+      { params: Promise.resolve({ action }) },
+    );
+  const bearer = { cookie: "", authorization: "Bearer " + f.grant.token };
+  assert.equal((await call("review-prepare", f.proposal, bearer)).status, 403);
+  assert.equal(
+    (
+      await call(
+        "review-enable",
+        { subjectId: f.user, grantId: f.grant.grantId },
+        bearer,
+      )
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await call(
+        "review-enable",
+        { subjectId: f.user, grantId: f.grant.grantId },
+        { origin: "https://evil.invalid" },
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await call("review-enable", {
+        subjectId: f.other,
+        grantId: f.grant.grantId,
+      })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await call("review-enable", {
+        subjectId: f.user,
+        grantId: f.grant.grantId,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await (await call("review-status", {}, bearer)).json()).enabled,
+    true,
+  );
+  assert.equal(
+    (
+      await call(
+        "review-prepare",
+        { ...f.proposal, large: "x".repeat(66000) },
+        bearer,
+      )
+    ).status,
+    413,
+  );
+  const prepared = await (
+    await call("review-prepare", f.proposal, bearer)
+  ).json();
+  assert.equal(
+    (
+      await call(
+        "review-save",
+        {
+          subjectId: f.user,
+          reviewId: prepared.reviewId,
+          digest: prepared.digest,
+        },
+        bearer,
+      )
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await call(
+        "review-detail",
+        { subjectId: f.user, reviewId: prepared.reviewId },
+        { origin: "https://evil.invalid" },
+      )
+    ).status,
+    403,
+  );
+  const detail = await (
+    await call("review-detail", {
+      subjectId: f.user,
+      reviewId: prepared.reviewId,
+    })
+  ).json();
+  assert.equal(detail.proposal.operationId, f.proposal.operationId);
+  assert.equal(
+    (
+      await call("review-save", {
+        subjectId: f.other,
+        reviewId: prepared.reviewId,
+        digest: prepared.digest,
+      })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await call("review-save", {
+        subjectId: f.user,
+        reviewId: prepared.reviewId,
+        digest: prepared.digest,
+        approved: true,
+      })
+    ).status,
+    400,
+  );
+  const saved = await (
+    await call("review-save", {
+      subjectId: f.user,
+      reviewId: prepared.reviewId,
+      digest: prepared.digest,
+    })
+  ).json();
+  assert.equal(saved.version, 2);
+  const receipt = await (
+    await call(
+      "review-receipt",
+      { operationId: f.proposal.operationId },
+      bearer,
+    )
+  ).json();
+  assert.deepEqual(receipt.receipt, saved);
+  assert.equal(JSON.stringify(receipt).includes("Synthetic summary"), false);
+  const listed = await (await call("reviews", undefined, {}, "GET")).json();
+  assert.equal(listed.items.length, 1);
+  assert.equal(JSON.stringify(listed).includes("Synthetic summary"), false);
+  process.env.AI_CONNECTOR_ENABLED = "false";
+  try {
+    assert.equal(
+      (
+        await call("review-disable", {
+          subjectId: f.user,
+          grantId: f.grant.grantId,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await call("review-delete", {
+          subjectId: f.user,
+          reviewId: prepared.reviewId,
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await call("review-save", {
+          subjectId: f.user,
+          reviewId: prepared.reviewId,
+          digest: prepared.digest,
+        })
+      ).status,
+      404,
+    );
+  } finally {
+    process.env.AI_CONNECTOR_ENABLED = "true";
+  }
+});
+
+test("grant listing stays available before the review permission column is migrated", async () => {
+  const f = await reviewFixture();
+  await pool().query(
+    "ALTER TABLE ai_grants RENAME COLUMN review_epoch TO temporarily_unmigrated_review_epoch",
+  );
+  try {
+    const rows = await ai.list(f.user);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].reviews_enabled, false);
+    assert.equal(rows[0].id, f.grant.grantId);
+  } finally {
+    await pool().query(
+      "ALTER TABLE ai_grants RENAME COLUMN temporarily_unmigrated_review_epoch TO review_epoch",
+    );
+  }
+});

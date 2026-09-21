@@ -240,6 +240,84 @@ try {
       body: JSON.stringify({ meetingId: meeting }),
     });
   assert.equal((await read()).status, 200);
+  const source = await (await read()).json();
+  await page
+    .getByRole("button", { name: "Enable draft review uploads", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Disable draft review uploads",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const staged = await fetch(backend + "/api/integrations/ai/review-prepare", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + grant.token,
+    },
+    body: JSON.stringify({
+      operationId: randomUUID(),
+      meetingId: meeting,
+      version: source.meeting.version,
+      projectionHash: source.projectionHash,
+      summary: [{ text: "Synthetic summary addition", evidence: ["s1"] }],
+      actions: [
+        {
+          text: "Synthetic suggested action",
+          evidence: ["s1"],
+          owner: null,
+          dueDate: null,
+        },
+      ],
+    }),
+  });
+  assert.equal(staged.status, 201);
+  await page
+    .getByRole("button", { name: "Load draft reviews", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Open review", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Review exact additions", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Save reviewed additions", exact: true }),
+  ).toBeDisabled();
+  assert.equal(
+    (await pool().query("SELECT notes FROM meetings WHERE id=$1", [meeting]))
+      .rows[0].notes,
+    null,
+  );
+  await page
+    .getByText("Exact resulting notes and evidence", { exact: true })
+    .click();
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    ),
+    false,
+    "Exact review overflows on a narrow viewport",
+  );
+  await page
+    .getByLabel("I reviewed these additions and the meeting audience.", {
+      exact: true,
+    })
+    .check();
+  await page
+    .getByRole("button", { name: "Save reviewed additions", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Saved to AutoNote", exact: true }),
+  ).toBeVisible();
+  const saved = (
+    await pool().query("SELECT notes,version FROM meetings WHERE id=$1", [
+      meeting,
+    ])
+  ).rows[0];
+  assert.equal(saved.version, 2);
+  assert.equal(saved.notes.actions[0].status, "proposed");
+  assert.match(saved.notes.summary, /s1: 0–4s/);
+
   await page
     .getByRole("button", { name: "Revoke connection", exact: true })
     .click();
