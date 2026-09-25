@@ -25,6 +25,7 @@ export async function authorizeApproval(user: string, raw: unknown) {
   const input = z
     .strictObject({
       grantId: z.uuid(),
+      expectedReviewEpoch: z.uuid(),
       actions: z.tuple([z.literal(scope)]),
       challenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
       expiresInMinutes: z.number().int().min(1).max(60),
@@ -32,7 +33,7 @@ export async function authorizeApproval(user: string, raw: unknown) {
     .parse(raw);
   return transaction(async (db) => {
     const { grant } = await ownedReviewGrant(db, user, input.grantId);
-    if (!grant.review_epoch)
+    if (!grant.review_epoch || grant.review_epoch !== input.expectedReviewEpoch)
       throw new HttpError(409, "Enable draft reviews before remote approval.");
     // One current delegation per source grant. Issuance and use share source locks.
     await db.query(

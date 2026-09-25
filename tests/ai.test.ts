@@ -913,6 +913,12 @@ test("remote approval requires its own PKCE grant and saves the exact reviewed p
     f = await reviewFixture();
   const input = {
     grantId: f.grant.grantId,
+    expectedReviewEpoch:
+      (
+        await pool().query("SELECT review_epoch FROM ai_grants WHERE id=$1", [
+          f.grant.grantId,
+        ])
+      ).rows[0].review_epoch ?? randomUUID(),
     actions: ["approve_meeting_notes"],
     challenge: f.input.challenge,
     expiresInMinutes: 15,
@@ -922,7 +928,18 @@ test("remote approval requires its own PKCE grant and saves the exact reviewed p
   process.env.AI_REMOTE_APPROVAL_ENABLED = "true";
   await assert.rejects(approval.authorizeApproval(f.user, input));
   await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+  input.expectedReviewEpoch = (
+    await pool().query("SELECT review_epoch FROM ai_grants WHERE id=$1", [
+      f.grant.grantId,
+    ])
+  ).rows[0].review_epoch;
   await assert.rejects(approval.authorizeApproval(f.other, input));
+  await assert.rejects(
+    approval.authorizeApproval(f.user, {
+      ...input,
+      expectedReviewEpoch: randomUUID(),
+    }),
+  );
   const issued = await approval.authorizeApproval(f.user, input);
   await assert.rejects(
     approval.exchangeApproval({ code: issued.code, verifier: "z".repeat(64) }),
@@ -984,6 +1001,12 @@ test("approval rejects changed source authority, epoch, expiry and replaced dele
     await f.reviews.allowReviews(f.user, f.grant.grantId, true);
     const input = {
       grantId: f.grant.grantId,
+      expectedReviewEpoch:
+        (
+          await pool().query("SELECT review_epoch FROM ai_grants WHERE id=$1", [
+            f.grant.grantId,
+          ])
+        ).rows[0].review_epoch ?? randomUUID(),
       actions: ["approve_meeting_notes"],
       challenge: f.input.challenge,
       expiresInMinutes: 15,
@@ -1070,6 +1093,12 @@ test("approval routes require source-session consent and a distinct bearer for e
   const input = {
     subjectId: f.user,
     grantId: f.grant.grantId,
+    expectedReviewEpoch:
+      (
+        await pool().query("SELECT review_epoch FROM ai_grants WHERE id=$1", [
+          f.grant.grantId,
+        ])
+      ).rows[0].review_epoch ?? randomUUID(),
     actions: ["approve_meeting_notes"],
     challenge: f.input.challenge,
     expiresInMinutes: 15,

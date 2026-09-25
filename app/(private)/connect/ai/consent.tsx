@@ -1,5 +1,6 @@
 "use client";
 import Reviews from "./reviews";
+import Approvals from "./approvals";
 import { useEffect, useRef, useState } from "react";
 type Choice = {
   id: string;
@@ -273,7 +274,8 @@ export default function Consent() {
                   <p>
                     Draft review uploads:{" "}
                     {grant.reviews_enabled ? "Enabled" : "Disabled"}. Each save
-                    still requires your exact review here.
+                    still requires exact review here or a separately granted
+                    approval permission.
                   </p>
                   <button
                     disabled={busy || (!enabled && !grant.reviews_enabled)}
@@ -312,6 +314,9 @@ export default function Consent() {
             </article>
           ))}
         </section>
+      )}
+      {user && (
+        <Approvals key={user.id + ":" + epoch.current} user={user} api={api} />
       )}
       {user && <Reviews key={user.id} user={user} api={api} />}
     </main>
