@@ -4,7 +4,11 @@ import { transaction, pool } from "./db";
 import { token, hash } from "./auth";
 import { requireAiEnabled } from "./ai";
 import { HttpError } from "./model";
-import { ownedReviewGrant, saveReviewInTransaction } from "./ai-reviews";
+import {
+  ownedReviewGrant,
+  saveReviewInTransaction,
+  reviewDetailInTransaction,
+} from "./ai-reviews";
 import type { PoolClient } from "pg";
 const credential = z.string().regex(/^[a-f0-9]{64}$/);
 const challenge = (value: string) =>
@@ -183,4 +187,37 @@ export async function revokeApproval(user: string, id: string) {
   );
   if (!row.rowCount) throw new HttpError(404, "Approval connection not found.");
   return { revoked: true };
+}
+
+/** Approval includes reviewing the exact notes to be saved, never transcript/recording reads. */
+export async function inspectApprovalReview(secret: string, raw: unknown) {
+  enabled();
+  const input = z.strictObject({ reviewId: z.uuid() }).parse(raw);
+  return transaction(async (db) => {
+    const initial = await lookup(db, secret, "token_hash");
+    return reviewDetailInTransaction(
+      db,
+      initial.user_id,
+      input.reviewId,
+      async ({ grant }) => {
+        await locked(db, secret, "token_hash", grant);
+      },
+    );
+  });
+}
+export async function listApprovals(user: string) {
+  if (
+    !(
+      await pool().query(
+        "SELECT to_regclass('ai_approval_grants') IS NOT NULL AS present",
+      )
+    ).rows[0].present
+  )
+    return [];
+  return (
+    await pool().query(
+      "SELECT a.id,a.grant_id,a.created_at,a.expires_at,a.revoked_at,g.meeting_id,(a.revoked_at IS NULL AND a.expires_at>now() AND g.revoked_at IS NULL AND g.expires_at>now() AND a.epoch=g.review_epoch) AS permission_current FROM ai_approval_grants a JOIN ai_grants g ON g.id=a.grant_id WHERE a.user_id=$1 ORDER BY a.created_at DESC LIMIT 100",
+      [user],
+    )
+  ).rows;
 }

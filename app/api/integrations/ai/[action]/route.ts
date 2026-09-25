@@ -1,7 +1,13 @@
+import * as approvals from "../../../../../lib/ai-approval";
 import * as reviews from "../../../../../lib/ai-reviews";
 import { z, ZodError } from "zod";
 import * as ai from "../../../../../lib/ai";
-import { currentUser, checkOrigin, rateLimit } from "../../../../../lib/auth";
+import {
+  currentUser,
+  checkOrigin,
+  rateLimit,
+  hash,
+} from "../../../../../lib/auth";
 import { HttpError } from "../../../../../lib/model";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +53,8 @@ async function handle(
     if (!process.env.DATABASE_URL)
       throw new HttpError(503, "AutoNote accounts are not configured.");
     const reducing = [
+      "approval-grants",
+      "approval-revoke",
       "grants",
       "revoke",
       "disconnect",
@@ -63,6 +71,32 @@ async function handle(
         503,
         "AI connections are unavailable in preview mode.",
       );
+    if (
+      ["approval-exchange", "approval-review", "approval-save"].includes(action)
+    ) {
+      if (req.method !== "POST") throw new HttpError(405, "Use POST.");
+      const input = await body(req);
+      if (action === "approval-exchange") {
+        const exchange = z
+          .strictObject({
+            code: z.string().regex(/^[a-f0-9]{64}$/),
+            verifier: z.string().regex(/^[A-Za-z0-9_-]{43,128}$/),
+          })
+          .parse(input);
+        await rateLimit("ai-approval-exchange:" + hash(exchange.code), 10);
+        return json(await approvals.exchangeApproval(exchange));
+      }
+      const authorization = req.headers.get("authorization") ?? "";
+      if (!/^Bearer [a-f0-9]{64}$/.test(authorization))
+        throw new HttpError(401, "Approval credential required.");
+      const bearer = authorization.slice(7);
+      await rateLimit("ai-approval:" + hash(bearer), 100);
+      return json(
+        action === "approval-review"
+          ? await approvals.inspectApprovalReview(bearer, input)
+          : await approvals.approveReview(bearer, input),
+      );
+    }
     if (
       [
         "exchange",
@@ -115,6 +149,36 @@ async function handle(
     }
     const user = await currentUser(req);
     if (req.method !== "GET") checkOrigin(req);
+    if (action === "approval-grants" && req.method === "GET")
+      return json({
+        user: { id: user!.id },
+        items: await approvals.listApprovals(user!.id),
+        enabled:
+          process.env.AI_CONNECTOR_ENABLED === "true" &&
+          process.env.AI_REMOTE_APPROVAL_ENABLED === "true",
+      });
+    if (action === "approval-authorize" && req.method === "POST") {
+      const { subjectId, confirmed, acknowledged, ...input } = z
+        .object({
+          subjectId: z.uuid(),
+          confirmed: z.literal(true),
+          acknowledged: z.literal(true),
+        })
+        .passthrough()
+        .parse(await body(req));
+      if (subjectId !== user!.id)
+        throw new HttpError(409, "Signed-in account changed. Review again.");
+      await rateLimit("ai-approval-authorize:" + user!.id, 20);
+      return json(await approvals.authorizeApproval(user!.id, input), 201);
+    }
+    if (action === "approval-revoke" && req.method === "POST") {
+      const { subjectId, approvalId } = z
+        .strictObject({ subjectId: z.uuid(), approvalId: z.uuid() })
+        .parse(await body(req));
+      if (subjectId !== user!.id)
+        throw new HttpError(409, "Signed-in account changed. Review again.");
+      return json(await approvals.revokeApproval(user!.id, approvalId));
+    }
     if (action === "grants" && req.method === "GET")
       return json({
         user: { id: user!.id, name: user!.name },
