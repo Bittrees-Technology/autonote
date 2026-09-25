@@ -195,6 +195,9 @@ export default function Approvals({
     const current = selection(next),
       start = Date.now();
     setData(next);
+    setNotice(
+      "Review the meeting and duration, then acknowledge the permission below.",
+    );
     setCode(null);
     setAck(false);
     setReview({
