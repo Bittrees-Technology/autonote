@@ -9,6 +9,13 @@ ALTER TABLE ai_grants ADD COLUMN IF NOT EXISTS review_epoch uuid;
 CREATE TABLE IF NOT EXISTS ai_reviews(
  id uuid PRIMARY KEY,user_id uuid NOT NULL REFERENCES users(id),meeting_id uuid NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,grant_id uuid NOT NULL REFERENCES ai_grants(id),operation_id uuid NOT NULL,epoch uuid NOT NULL,version int NOT NULL,projection_hash text NOT NULL,digest text NOT NULL,payload jsonb,expires_at timestamptz NOT NULL,receipt jsonb,created_at timestamptz NOT NULL DEFAULT now(),UNIQUE(user_id,operation_id)
 );
+CREATE TABLE IF NOT EXISTS ai_approval_grants(
+ id uuid PRIMARY KEY, user_id uuid NOT NULL REFERENCES users(id), grant_id uuid NOT NULL REFERENCES ai_grants(id) ON DELETE CASCADE,
+ epoch uuid NOT NULL, code_hash text UNIQUE, token_hash text UNIQUE, challenge text NOT NULL,
+ code_expires timestamptz NOT NULL, expires_at timestamptz NOT NULL, revoked_at timestamptz,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ai_approval_grants_user ON ai_approval_grants(user_id,created_at);
 CREATE INDEX IF NOT EXISTS ai_grants_user ON ai_grants(user_id,created_at);
 `;
 
@@ -20,6 +27,17 @@ export async function revokeAiForAccounts(db: PoolClient, users: string[]) {
   if (present)
     await db.query(
       "UPDATE ai_grants SET revoked_at=COALESCE(revoked_at,now()),code_hash=NULL,token_hash=NULL WHERE user_id=ANY($1::uuid[])",
+      [users],
+    );
+  if (
+    (
+      await db.query(
+        "SELECT to_regclass('ai_approval_grants') IS NOT NULL AS present",
+      )
+    ).rows[0].present
+  )
+    await db.query(
+      "UPDATE ai_approval_grants SET revoked_at=COALESCE(revoked_at,now()),code_hash=NULL,token_hash=NULL WHERE user_id=ANY($1::uuid[])",
       [users],
     );
   if (

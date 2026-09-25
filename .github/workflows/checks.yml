@@ -1,5 +1,9 @@
 name: checks
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
 jobs:
   web:
     runs-on: ubuntu-latest
