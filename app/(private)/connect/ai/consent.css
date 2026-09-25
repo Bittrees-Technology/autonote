@@ -59,3 +59,20 @@ body {
 .ai-consent p {
   overflow-wrap: anywhere;
 }
+
+.ai-approvals {
+  margin-top: 2rem;
+  border-top: 1px solid #ddd;
+}
+.ai-consent .approval-ack {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.ai-consent .approval-ack input {
+  display: inline-block;
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  flex: 0 0 auto;
+}

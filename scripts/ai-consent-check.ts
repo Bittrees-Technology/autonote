@@ -3,7 +3,7 @@ import { randomUUID, createHash } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer as createHttpsServer } from "node:https";
 import { request as httpRequest } from "node:http";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Pool } from "pg";
@@ -79,6 +79,7 @@ try {
         ...process.env,
         APP_URL: origin,
         AI_CONNECTOR_ENABLED: "true",
+        AI_REMOTE_APPROVAL_ENABLED: "true",
         AUTONOTE_MODE: "live",
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -250,6 +251,69 @@ try {
       exact: true,
     }),
   ).toBeVisible();
+  // One focused approval flow shares the existing synthetic fixture.
+  await page.goto(
+    origin +
+      "/connect/ai?approval_challenge=" +
+      challenge +
+      "&approval_grant=" +
+      grant.grantId,
+  );
+  const approvals = page.getByRole("region", {
+    name: "AI approval permissions",
+  });
+  await approvals
+    .getByRole("button", { name: "Review approval permission", exact: true })
+    .click();
+  const allow = approvals.getByRole("button", {
+    name: "Allow approval from companion",
+    exact: true,
+  });
+  await expect(allow).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(allow).toHaveCount(0);
+  await approvals
+    .getByRole("button", { name: "Review approval permission", exact: true })
+    .click();
+  await expect(allow).toBeDisabled();
+  mkdirSync("artifacts/ai-approval", { recursive: true });
+  await approvals.screenshot({ path: "artifacts/ai-approval/phone.png" });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    ),
+    false,
+  );
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await approvals.screenshot({ path: "artifacts/ai-approval/desktop.png" });
+  await approvals
+    .getByLabel("I reviewed this meeting and the permission to save notes.", {
+      exact: true,
+    })
+    .check();
+  await allow.click();
+  const approvalCode = approvals.getByLabel("Approval exchange code", {
+    exact: true,
+  });
+  await expect(approvalCode).toBeVisible();
+  const approvalExchange = await fetch(
+    backend + "/api/integrations/ai/approval-exchange",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: await approvalCode.textContent(),
+        verifier,
+      }),
+    },
+  );
+  assert.equal(approvalExchange.status, 200);
+  await approvals
+    .getByRole("button", { name: "Revoke approval permission", exact: true })
+    .click();
+  await expect(approvals.getByText("Revoked", { exact: false })).toBeVisible();
+  await expect(approvalCode).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
   const staged = await fetch(backend + "/api/integrations/ai/review-prepare", {
     method: "POST",
     headers: {

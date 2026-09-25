@@ -38,6 +38,12 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Private AI consent browser acceptance
         run: npx tsx --env-file=.env.test scripts/ai-consent-check.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-approval-previews
+          path: artifacts/ai-approval
+          if-no-files-found: ignore
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
