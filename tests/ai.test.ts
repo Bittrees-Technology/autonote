@@ -1035,3 +1035,133 @@ test("approval rejects changed source authority, epoch, expiry and replaced dele
     );
   }
 });
+
+test("approval routes require source-session consent and a distinct bearer for exact review and save", async () => {
+  const { GET, POST } =
+      await import("../app/api/integrations/ai/[action]/route"),
+    { hash, cookieName, token } = await import("../lib/auth"),
+    f = await reviewFixture();
+  process.env.AI_REMOTE_APPROVAL_ENABLED = "true";
+  await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+  const session = token(),
+    origin = process.env.APP_URL!;
+  await pool().query(
+    "INSERT INTO sessions(hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
+    [hash(session), f.user],
+  );
+  const call = (
+    action: string,
+    input?: unknown,
+    headers: Record<string, string> = {},
+  ) =>
+    (input === undefined ? GET : POST)(
+      new Request(origin + "/api/integrations/ai/" + action, {
+        method: input === undefined ? "GET" : "POST",
+        headers: {
+          origin,
+          cookie: cookieName + "=" + session,
+          "Content-Type": "application/json",
+          ...headers,
+        },
+        ...(input === undefined ? {} : { body: JSON.stringify(input) }),
+      }),
+      { params: Promise.resolve({ action }) },
+    );
+  const input = {
+    subjectId: f.user,
+    grantId: f.grant.grantId,
+    actions: ["approve_meeting_notes"],
+    challenge: f.input.challenge,
+    expiresInMinutes: 15,
+    confirmed: true,
+    acknowledged: true,
+  };
+  assert.equal(
+    (await call("approval-authorize", input, { cookie: "" })).status,
+    401,
+  );
+  assert.equal(
+    (
+      await call("approval-authorize", input, {
+        origin: "https://foreign.invalid",
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await call("approval-authorize", { ...input, subjectId: f.other })).status,
+    409,
+  );
+  assert.equal(
+    (await call("approval-authorize", { ...input, acknowledged: false }))
+      .status,
+    400,
+  );
+  const authorized = await call("approval-authorize", input);
+  assert.equal(authorized.status, 201);
+  const issued = await authorized.json();
+  const exchanged = await call(
+    "approval-exchange",
+    { code: issued.code, verifier: f.verifier },
+    { cookie: "" },
+  );
+  assert.equal(exchanged.status, 200);
+  const permission = await exchanged.json();
+  const prepared = await f.reviews.prepareReview(f.grant.token, f.proposal),
+    save = {
+      reviewId: prepared.reviewId,
+      digest: prepared.digest,
+      confirmed: true,
+    };
+  assert.equal(
+    (
+      await call("approval-save", save, {
+        cookie: "",
+        authorization: "Bearer " + f.grant.token,
+      })
+    ).status,
+    401,
+  );
+  const bearer = { cookie: "", authorization: "Bearer " + permission.token };
+  const detail = await call(
+    "approval-review",
+    { reviewId: prepared.reviewId },
+    bearer,
+  );
+  assert.equal(detail.status, 200);
+  const value = await detail.json();
+  assert.equal(value.digest, prepared.digest);
+  assert.equal(value.meetingId, f.id);
+  assert.deepEqual(value.proposal, f.proposal);
+  const saved = await call("approval-save", save, bearer);
+  assert.equal(saved.status, 200);
+  const receipt = await saved.json();
+  assert.equal(receipt.version, 2);
+  assert.deepEqual(
+    await (await call("approval-save", save, bearer)).json(),
+    receipt,
+  );
+  const listed = await call("approval-grants");
+  assert.equal(listed.status, 200);
+  const text = await listed.text();
+  assert.ok(text.includes(issued.approvalId));
+  assert.ok(!text.includes(permission.token));
+  assert.ok(!text.includes("token_hash"));
+  delete process.env.AI_REMOTE_APPROVAL_ENABLED;
+  assert.equal((await call("approval-save", save, bearer)).status, 404);
+  assert.equal(
+    (
+      await call("approval-revoke", {
+        subjectId: f.user,
+        approvalId: issued.approvalId,
+      })
+    ).status,
+    200,
+  );
+  process.env.AI_REMOTE_APPROVAL_ENABLED = "true";
+  assert.equal(
+    (await call("approval-review", { reviewId: prepared.reviewId }, bearer))
+      .status,
+    401,
+  );
+});

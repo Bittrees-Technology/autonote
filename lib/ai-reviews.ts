@@ -251,29 +251,40 @@ export async function lockedReview(db: PoolClient, user: string, id: string) {
 }
 export async function reviewDetail(user: string, id: string) {
   requireAiEnabled();
-  return transaction(async (db) => {
-    const { grant, record, review } = await lockedReview(db, user, id);
-    if (review.receipt) return { id: review.id, receipt: review.receipt };
-    if (
-      !review.payload ||
-      review.epoch !== grant.review_epoch ||
-      new Date(review.expires_at).getTime() <= Date.now()
-    )
-      throw new HttpError(409, "Review expired, deleted or disabled.");
-    const proposal = proposalSchema.parse(review.payload),
-      notes = merged(record, proposal);
-    return {
-      id: review.id,
-      digest: review.digest,
-      expiresAt: review.expires_at,
-      meetingId: record.id,
-      title: record.title,
-      visibility: record.visibility,
-      proposal,
-      notes,
-    };
-  });
+  return transaction((db) => reviewDetailInTransaction(db, user, id));
 }
+export async function reviewDetailInTransaction(
+  db: PoolClient,
+  user: string,
+  id: string,
+  authority?: (
+    current: Awaited<ReturnType<typeof lockedReview>>,
+  ) => Promise<void>,
+) {
+  const current = await lockedReview(db, user, id);
+  await authority?.(current);
+  const { grant, record, review } = current;
+  if (review.receipt) return { id: review.id, receipt: review.receipt };
+  if (
+    !review.payload ||
+    review.epoch !== grant.review_epoch ||
+    new Date(review.expires_at).getTime() <= Date.now()
+  )
+    throw new HttpError(409, "Review expired, deleted or disabled.");
+  const proposal = proposalSchema.parse(review.payload),
+    notes = merged(record, proposal);
+  return {
+    id: review.id,
+    digest: review.digest,
+    expiresAt: review.expires_at,
+    meetingId: record.id,
+    title: record.title,
+    visibility: record.visibility,
+    proposal,
+    notes,
+  };
+}
+
 /** Exact source-session review and save in one transaction; no bearer approval or CRM dispatch. */
 export async function saveReview(user: string, id: string, digest: string) {
   requireAiEnabled();
