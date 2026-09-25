@@ -39,7 +39,11 @@ const proposalSchema = z.strictObject({
     .max(30),
 });
 type Proposal = z.infer<typeof proposalSchema>;
-async function owned(db: PoolClient, user: string, id: string) {
+export async function ownedReviewGrant(
+  db: PoolClient,
+  user: string,
+  id: string,
+) {
   const lookup = (
     await db.query("SELECT * FROM ai_grants WHERE id=$1 AND user_id=$2", [
       z.uuid().parse(id),
@@ -79,7 +83,7 @@ export async function allowReviews(
       if (!result.rowCount) throw new HttpError(404, "Connection not found.");
       return { enabled: false, epoch: null };
     }
-    const { grant } = await owned(db, user, grantId),
+    const { grant } = await ownedReviewGrant(db, user, grantId),
       epoch = randomUUID();
     await db.query("UPDATE ai_grants SET review_epoch=$2 WHERE id=$1", [
       grant.id,
@@ -227,7 +231,7 @@ export async function prepareReview(bearer: string, raw: unknown) {
     return { reviewId: id, digest, expiresAt: expires, receipt: null };
   });
 }
-async function currentReview(db: PoolClient, user: string, id: string) {
+export async function lockedReview(db: PoolClient, user: string, id: string) {
   const lookup = (
     await db.query(
       "SELECT grant_id FROM ai_reviews WHERE id=$1 AND user_id=$2",
@@ -235,7 +239,7 @@ async function currentReview(db: PoolClient, user: string, id: string) {
     )
   ).rows[0];
   if (!lookup) throw new HttpError(404, "Review not found.");
-  const { grant, record } = await owned(db, user, lookup.grant_id);
+  const { grant, record } = await ownedReviewGrant(db, user, lookup.grant_id);
   const review = (
     await db.query(
       "SELECT * FROM ai_reviews WHERE id=$1 AND user_id=$2 FOR UPDATE",
@@ -248,7 +252,7 @@ async function currentReview(db: PoolClient, user: string, id: string) {
 export async function reviewDetail(user: string, id: string) {
   requireAiEnabled();
   return transaction(async (db) => {
-    const { grant, record, review } = await currentReview(db, user, id);
+    const { grant, record, review } = await lockedReview(db, user, id);
     if (review.receipt) return { id: review.id, receipt: review.receipt };
     if (
       !review.payload ||
@@ -276,30 +280,50 @@ export async function saveReview(user: string, id: string, digest: string) {
   z.string()
     .regex(/^[a-f0-9]{64}$/)
     .parse(digest);
-  return transaction(async (db) => {
-    const { grant, record, review } = await currentReview(db, user, id);
-    if (review.digest !== digest) throw new HttpError(409, "Review changed.");
-    if (review.receipt) return review.receipt;
-    if (
-      !review.payload ||
-      review.epoch !== grant.review_epoch ||
-      new Date(review.expires_at).getTime() <= Date.now()
-    )
-      throw new HttpError(409, "Review expired, deleted or disabled.");
-    const notes = merged(record, proposalSchema.parse(review.payload));
-    await editMeeting(user, record.id, { version: record.version, notes }, db);
-    const receipt = {
-      meetingId: record.id,
-      version: record.version + 1,
-      operationId: review.operation_id,
-    };
-    await db.query(
-      "UPDATE ai_reviews SET receipt=$2,payload=NULL WHERE id=$1",
-      [review.id, receipt],
-    );
-    return receipt;
-  });
+  return transaction((db) => saveReviewInTransaction(db, user, id, digest));
 }
+/** Internal shared write path. Remote delegation must supply a fresh authority check;
+ * source-session callers retain their existing route authentication. */
+export async function saveReviewInTransaction(
+  db: PoolClient,
+  user: string,
+  id: string,
+  digest: string,
+  authority?: (
+    current: Awaited<ReturnType<typeof lockedReview>>,
+  ) => Promise<void>,
+) {
+  const current = await lockedReview(db, user, id);
+  const { grant, record, review } = current;
+  await authority?.(current);
+  if (review.digest !== digest) throw new HttpError(409, "Review changed.");
+  if (review.receipt) return review.receipt;
+  if (
+    !review.payload ||
+    review.epoch !== grant.review_epoch ||
+    new Date(review.expires_at).getTime() <= Date.now()
+  )
+    throw new HttpError(409, "Review expired, deleted or disabled.");
+  const notes = merged(record, proposalSchema.parse(review.payload));
+  await editMeeting(user, record.id, { version: record.version, notes }, db);
+  await authority?.(current);
+  if (
+    new Date(review.expires_at).getTime() <= Date.now() ||
+    new Date(grant.expires_at).getTime() <= Date.now()
+  )
+    throw new HttpError(409, "Review expired before save completed.");
+  const receipt = {
+    meetingId: record.id,
+    version: record.version + 1,
+    operationId: review.operation_id,
+  };
+  await db.query("UPDATE ai_reviews SET receipt=$2,payload=NULL WHERE id=$1", [
+    review.id,
+    receipt,
+  ]);
+  return receipt;
+}
+
 export async function deleteReview(user: string, id: string) {
   const result = await pool().query(
     "UPDATE ai_reviews SET payload=NULL WHERE id=$1 AND user_id=$2 RETURNING id",

@@ -907,3 +907,131 @@ test("grant listing stays available before the review permission column is migra
     );
   }
 });
+
+test("remote approval requires its own PKCE grant and saves the exact reviewed proposal once", async () => {
+  const approval = await import("../lib/ai-approval"),
+    f = await reviewFixture();
+  const input = {
+    grantId: f.grant.grantId,
+    actions: ["approve_meeting_notes"],
+    challenge: f.input.challenge,
+    expiresInMinutes: 15,
+  };
+  delete process.env.AI_REMOTE_APPROVAL_ENABLED;
+  await assert.rejects(approval.authorizeApproval(f.user, input));
+  process.env.AI_REMOTE_APPROVAL_ENABLED = "true";
+  await assert.rejects(approval.authorizeApproval(f.user, input));
+  await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+  await assert.rejects(approval.authorizeApproval(f.other, input));
+  const issued = await approval.authorizeApproval(f.user, input);
+  await assert.rejects(
+    approval.exchangeApproval({ code: issued.code, verifier: "z".repeat(64) }),
+  );
+  const permission = await approval.exchangeApproval({
+    code: issued.code,
+    verifier: f.verifier,
+  });
+  await assert.rejects(
+    approval.exchangeApproval({ code: issued.code, verifier: f.verifier }),
+  );
+  const prepared = await f.reviews.prepareReview(f.grant.token, f.proposal);
+  const save = {
+    reviewId: prepared.reviewId,
+    digest: prepared.digest,
+    confirmed: true,
+  };
+  await assert.rejects(approval.approveReview(f.grant.token, save));
+  await assert.rejects(ai.read(permission.token, { meetingId: f.id }));
+  await assert.rejects(
+    approval.approveReview(permission.token, {
+      ...save,
+      digest: "0".repeat(64),
+    }),
+  );
+  const results = await Promise.all([
+    approval.approveReview(permission.token, save),
+    approval.approveReview(permission.token, save),
+  ]);
+  assert.deepEqual(results[0], results[1]);
+  assert.equal(results[0].version, 2);
+  const stored = (
+    await pool().query("SELECT * FROM ai_approval_grants WHERE id=$1", [
+      issued.approvalId,
+    ])
+  ).rows[0];
+  assert.equal(stored.code_hash, null);
+  assert.notEqual(stored.token_hash, permission.token);
+  assert.equal(
+    (await pool().query("SELECT version FROM meetings WHERE id=$1", [f.id]))
+      .rows[0].version,
+    2,
+  );
+  await approval.revokeApproval(f.user, issued.approvalId);
+  await assert.rejects(approval.approveReview(permission.token, save));
+});
+
+test("approval rejects changed source authority, epoch, expiry and replaced delegation without saving", async () => {
+  const approval = await import("../lib/ai-approval");
+  process.env.AI_REMOTE_APPROVAL_ENABLED = "true";
+  for (const change of [
+    "epoch",
+    "expiry",
+    "source",
+    "replacement",
+    "membership",
+  ]) {
+    const f = await reviewFixture();
+    await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+    const input = {
+      grantId: f.grant.grantId,
+      actions: ["approve_meeting_notes"],
+      challenge: f.input.challenge,
+      expiresInMinutes: 15,
+    };
+    const issued = await approval.authorizeApproval(f.user, input);
+    const permission = await approval.exchangeApproval({
+      code: issued.code,
+      verifier: f.verifier,
+    });
+    const prepared = await f.reviews.prepareReview(f.grant.token, f.proposal);
+    if (change === "epoch")
+      await f.reviews.allowReviews(f.user, f.grant.grantId, true);
+    if (change === "expiry")
+      await pool().query(
+        "UPDATE ai_approval_grants SET expires_at=now()-interval '1 second' WHERE id=$1",
+        [issued.approvalId],
+      );
+    if (change === "source")
+      await pool().query("UPDATE meetings SET version=version+1 WHERE id=$1", [
+        f.id,
+      ]);
+    if (change === "replacement")
+      await approval.authorizeApproval(f.user, input);
+    if (change === "membership")
+      await pool().query(
+        "DELETE FROM members WHERE workspace_id=$1 AND user_id=$2",
+        [f.workspace, f.user],
+      );
+    await assert.rejects(
+      approval.approveReview(permission.token, {
+        reviewId: prepared.reviewId,
+        digest: prepared.digest,
+        confirmed: true,
+      }),
+      change,
+    );
+    assert.equal(
+      (
+        await pool().query("SELECT receipt FROM ai_reviews WHERE id=$1", [
+          prepared.reviewId,
+        ])
+      ).rows[0].receipt,
+      null,
+    );
+    assert.equal(
+      (await pool().query("SELECT version FROM meetings WHERE id=$1", [f.id]))
+        .rows[0].version,
+      change === "source" ? 2 : 1,
+    );
+  }
+});
