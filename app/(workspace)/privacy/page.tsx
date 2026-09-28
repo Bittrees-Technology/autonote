@@ -1,3 +1,24 @@
+import type { Metadata } from "next";
+import { siteUrl, socialImage } from "../../../lib/seo";
+const description =
+  "Learn how AutoNote handles recordings, on-device transcription, Google Calendar permissions, sharing, data retention, and account deletion.";
+export const metadata: Metadata = {
+  title: "Privacy & Recording",
+  description,
+  alternates: { canonical: `${siteUrl}/privacy` },
+  openGraph: {
+    title: "Privacy & Recording | AutoNote",
+    description,
+    url: `${siteUrl}/privacy`,
+    images: [socialImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy & Recording | AutoNote",
+    description,
+    images: [socialImage],
+  },
+};
 export default function Privacy() {
   return (
     <article
@@ -8,7 +29,9 @@ export default function Privacy() {
         lineHeight: 1.7,
       }}
     >
-      <a data-insights="navigate-/" href="/">← AutoNote</a>
+      <a data-insights="navigate-/" href="/">
+        ← AutoNote
+      </a>
       <h1>Privacy and recording</h1>
       <p>
         AutoNote is a free, MIT-licensed beta operated by Bittrees. Updated
@@ -109,7 +132,10 @@ export default function Privacy() {
         data is used only to provide your chosen calendar features, never for
         advertising, sale, or model training. AutoNote’s use and transfer of
         information received from Google APIs follows the{" "}
-        <a data-insights="navigate-developersgooglecom/terms/api-services-user-data-policy" href="https://developers.google.com/terms/api-services-user-data-policy">
+        <a
+          data-insights="navigate-developersgooglecom/terms/api-services-user-data-policy"
+          href="https://developers.google.com/terms/api-services-user-data-policy"
+        >
           Google API Services User Data Policy
         </a>
         , including its Limited Use requirements.
@@ -118,21 +144,55 @@ export default function Privacy() {
       <p>
         Use Settings to export or delete your data. Report product problems
         through{" "}
-        <a data-insights="navigate-githubcom/bittrees-technology/autonote/issues" href="https://github.com/Bittrees-Technology/autonote/issues">
+        <a
+          data-insights="navigate-githubcom/bittrees-technology/autonote/issues"
+          href="https://github.com/Bittrees-Technology/autonote/issues"
+        >
           AutoNote support on GitHub
         </a>
         . Issues are public: do not include meeting content, account secrets, or
         personal information. For private account or privacy requests, contact
         our Google app support address:{" "}
-        <a data-insights="email" href="mailto:bobofbuilding@bittrees.io">bobofbuilding@bittrees.io</a>
+        <a data-insights="email" href="mailto:bobofbuilding@bittrees.io">
+          bobofbuilding@bittrees.io
+        </a>
         .
       </p>
       <p>
-        <a data-insights="navigate-neoncom/pricing" href="https://neon.com/pricing">Neon restore limits</a> ·{" "}
-        <a data-insights="navigate-vercelcom/legal/privacy-policy" href="https://vercel.com/legal/privacy-policy">Vercel privacy</a> ·{" "}
-        <a data-insights="navigate-neoncom/privacy-policy" href="https://neon.com/privacy-policy">Neon privacy</a> ·{" "}
-        <a data-insights="navigate-resendcom/legal/privacy-policy" href="https://resend.com/legal/privacy-policy">Resend privacy</a> ·{" "}
-        <a data-insights="navigate-huggingfaceco/privacy" href="https://huggingface.co/privacy">Hugging Face privacy</a>
+        <a
+          data-insights="navigate-neoncom/pricing"
+          href="https://neon.com/pricing"
+        >
+          Neon restore limits
+        </a>{" "}
+        ·{" "}
+        <a
+          data-insights="navigate-vercelcom/legal/privacy-policy"
+          href="https://vercel.com/legal/privacy-policy"
+        >
+          Vercel privacy
+        </a>{" "}
+        ·{" "}
+        <a
+          data-insights="navigate-neoncom/privacy-policy"
+          href="https://neon.com/privacy-policy"
+        >
+          Neon privacy
+        </a>{" "}
+        ·{" "}
+        <a
+          data-insights="navigate-resendcom/legal/privacy-policy"
+          href="https://resend.com/legal/privacy-policy"
+        >
+          Resend privacy
+        </a>{" "}
+        ·{" "}
+        <a
+          data-insights="navigate-huggingfaceco/privacy"
+          href="https://huggingface.co/privacy"
+        >
+          Hugging Face privacy
+        </a>
       </p>
     </article>
   );

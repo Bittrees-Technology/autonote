@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<rect width="1200" height="630" fill="#0d282a"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<rect x="64" y="54" width="58" height="58" rx="15" fill="#163d3b"/>
+<path d="M77 83v-8m8 18V65m8 36V61m8 30V71m8 13v-4" stroke="#57e5b6" stroke-width="4" stroke-linecap="round"/>
+<text x="140" y="94" font-size="39" font-weight="700" fill="#fafbf8">autonote</text>
+<text x="65" y="233" font-size="66" font-weight="700" letter-spacing="-2" fill="#fafbf8">Every conversation.</text>
+<text x="65" y="312" font-size="66" font-weight="700" letter-spacing="-2" fill="#fafbf8">A clearer next step.</text>
+<text x="68" y="384" font-size="26" fill="#b9d3cb">Private meeting transcripts,</text>
+<text x="68" y="422" font-size="26" fill="#b9d3cb">quoted highlights, and actions to review.</text>
+<text x="68" y="552" font-size="22" fill="#57e5b6">Audio stays on your device.</text>
+<rect x="752" y="151" width="383" height="329" rx="22" fill="#fafbf8"/>
+<text x="784" y="200" font-size="18" fill="#527269">From audio to notes</text>
+<g transform="translate(0,14)" stroke="#1d7664" stroke-width="7" stroke-linecap="round">
+<path d="M788 252v-12m17 26v-39m17 54v-67m17 46v-33m17 53v-65m17 50v-41m17 29v-16m17 32v-50m17 68v-87m17 71v-57m17 41v-24m17 38v-52m17 41v-31m17 26v-16m17 22v-26m17 16v-6"/>
+</g>
+<path d="M784 312h315" stroke="#d8e3dc"/>
+<text x="784" y="352" font-size="23" font-weight="700" fill="#193e36">Quoted highlights</text>
+<path d="M786 378h270m-270 14h205" stroke="#c4d3cb" stroke-width="6" stroke-linecap="round"/>
+<rect x="784" y="421" width="22" height="22" rx="5" fill="#1d7664"/>
+<path d="m789 431 4 5 8-10" fill="none" stroke="white" stroke-width="2.5"/>
+<text x="820" y="439" font-size="20" fill="#193e36">Review your next steps</text>
+<text x="1134" y="552" font-size="21" text-anchor="end" fill="#b9d3cb">autonote.bittrees.org</text>
+</g></svg>

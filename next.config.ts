@@ -11,13 +11,21 @@ const config: NextConfig = {
               { type: "host" as const, value: "autonote-gamma.vercel.app" },
             ],
             destination: "https://autonote.bittrees.org/:path*",
-            permanent: false,
+            permanent: true,
           },
         ]
       : [];
   },
   async headers() {
     return [
+      {
+        source: "/api/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      {
+        source: "/connect/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
       {
         source: "/(.*)",
         headers: [
