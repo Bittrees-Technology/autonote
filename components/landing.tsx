@@ -58,7 +58,7 @@ export function Landing({
               <em>Clear next steps.</em>
             </h1>
             <p className={styles.lead}>
-              Turn a recording into a searchable transcript, quoted highlights,
+              Turn meeting audio into a searchable transcript, quoted highlights,
               and actions you can review. Keep your audio on your device and
               your team on the same page.
             </p>
