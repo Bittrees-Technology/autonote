@@ -1,6 +1,6 @@
 "use client";
 import {useSharedSignIn} from "../../shared/sso/useSharedSignIn.jsx";
-import { LoginPanel } from "../shared/login/LoginPanel.jsx";
+import { LoginPanel, EmailSignIn, EthereumSignIn } from "../shared/login/LoginPanel.jsx";
 import {
   localRecordings,
   storeRecording,
@@ -2098,58 +2098,7 @@ useSharedSignIn(user?.id);
         >
           <LoginPanel product="AutoNote" title={modal==="reauth"?"Verify your current account":authLink?"Add a sign-in method":"Sign in"}
             description={modal==="reauth"?"Use an identity already linked to your current account.":"Use your email address or Ethereum wallet."}
-            email={<form
-            onSubmit={(e) => {
-              e.preventDefault();
-              challenge ? emailVerify() : emailStart();
-            }}
-          >
-            <label>
-              Email address
-              <input
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                disabled={!!challenge || busy}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </label>
-            {challenge && (
-              <label>
-                Verification code
-                <input
-                  inputMode="numeric"
-                  pattern="[0-9]{8}"
-                  autoComplete="one-time-code"
-                  required
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  maxLength={8}
-                />
-              </label>
-            )}
-            <button className="primary full" disabled={busy}>
-              {busy ? <Loader2 className="spin" size={16} /> : null}
-              {challenge ? "Verify and continue" : "Send verification code"}
-            </button>
-            {challenge && (
-              <button data-insights="use-a-different-email"
-                type="button"
-                className="text-button"
-                onClick={() => setChallenge("")}
-              >
-                Use a different email
-              </button>
-            )}
-          </form>} wallet={<button data-insights="continue-with-ethereum"
-            className="secondary full"
-            disabled={busy}
-            onClick={walletSign}
-          >
-            <Wallet size={18} />
-            Sign in with Ethereum
-          </button>} notice={<>          {authStep && (
+            email={<EmailSignIn email={email} onEmailChange={setEmail} challenge={challenge} code={code} onCodeChange={setCode} busy={busy} onReset={()=>{setChallenge('');setCode('');}} onSubmit={e=>{e.preventDefault();challenge?emailVerify():emailStart();}}/>} wallet={<EthereumSignIn busy={busy} onClick={walletSign}/>} notice={<>          {authStep && (
             <p role="status" className="fine">
               {authStep.replaceAll("-", " ")}
             </p>
