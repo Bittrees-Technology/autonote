@@ -1,3 +1,4 @@
+import {SharedRoles} from '../components/shared-roles';
 import "../globals.css";
 import Script from "next/script";
 export default function WorkspaceLayout({
@@ -8,6 +9,7 @@ export default function WorkspaceLayout({
   return (
     <>
       {children}
+      <SharedRoles/>
       <Script
         src="https://insights.bittrees.org/consent.js"
         data-insights-site="autonote"
