@@ -1,4 +1,5 @@
 "use client";
+import {SharedProfileCard} from "../../shared/sso/SharedProfileCard.jsx";
 import {useSharedSignIn} from "../../shared/sso/useSharedSignIn.jsx";
 import { LoginPanel, EmailSignIn, EthereumSignIn } from "../shared/login/LoginPanel.jsx";
 import {
@@ -1071,7 +1072,7 @@ useSharedSignIn(user?.id);
               )}
             </div>
           </aside>
-          <main>
+          <main><SharedProfileCard sessionRevision={user?.id}/>
             <div className="topbar">
               <span>
                 <span className="status-dot" />{" "}
