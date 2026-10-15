@@ -1,3 +1,4 @@
+import {cookie as sharedCookie} from '../../../shared/sso/client.mjs';
 import { timingSafeEqual } from "node:crypto";
 import { cleanup } from "../../../lib/maintenance";
 import { saveDeviceMeeting } from "../../../lib/device-service";
@@ -123,7 +124,11 @@ async function handle(
       await pool().query("DELETE FROM sessions WHERE hash=$1", [
         hash(cookie(req, cookieName)),
       ]);
-      return json({ ok: true }, setCookie(cookieName, "", 0));
+      const response=json({ok:true},setCookie(cookieName,"",0));
+      const sharedOrigin=process.env.APP_URL||new URL(req.url).origin;
+      response.headers.append('Set-Cookie',sharedCookie('bt-sso-skip','1',604800,sharedOrigin));
+      response.headers.append('Set-Cookie',sharedCookie('bt-sso-published','',0,sharedOrigin));
+      return response;
     }
     const user = await currentUser(req, path[0] !== "me");
     if (path[0] === "me") {

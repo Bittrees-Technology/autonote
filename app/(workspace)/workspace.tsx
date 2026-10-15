@@ -1,4 +1,6 @@
 "use client";
+import {useSharedSignIn} from "../../shared/sso/useSharedSignIn.jsx";
+import { LoginPanel } from "../shared/login/LoginPanel.jsx";
 import {
   localRecordings,
   storeRecording,
@@ -83,7 +85,9 @@ function Dialog({
   title,
   children,
   onClose,
+  login = false,
 }: {
+  login?: boolean;
   title: string;
   children: React.ReactNode;
   onClose: () => void;
@@ -96,6 +100,7 @@ function Dialog({
   return (
     <dialog
       ref={ref}
+      className={login ? "bt-login-dialog" : undefined}
       aria-labelledby={headingId}
       onCancel={(e) => {
         e.preventDefault();
@@ -149,6 +154,7 @@ export default function App() {
     [elapsed, setElapsed] = useState(0),
     [savedRecording, setSavedRecording] = useState(false),
     [recoverable, setRecoverable] = useState(false);
+useSharedSignIn(user?.id);
   const [captureMode, setCaptureMode] = useState<"microphone" | "meeting">(
     "microphone",
   );
@@ -2077,7 +2083,7 @@ export default function App() {
         </>
       )}
       {["auth", "reauth"].includes(modal) && (
-        <Dialog
+        <Dialog login
           title={
             modal === "reauth"
               ? "Verify your current account"
@@ -2090,12 +2096,9 @@ export default function App() {
             setModal("");
           }}
         >
-          <p className="muted">
-            {modal === "reauth"
-              ? "Use an identity already linked to your current account."
-              : "Sign in with email or your Ethereum wallet. Linking both keeps your meetings in one account."}
-          </p>
-          <form
+          <LoginPanel product="AutoNote" title={modal==="reauth"?"Verify your current account":authLink?"Add a sign-in method":"Sign in"}
+            description={modal==="reauth"?"Use an identity already linked to your current account.":"Use your email address or Ethereum wallet."}
+            email={<form
             onSubmit={(e) => {
               e.preventDefault();
               challenge ? emailVerify() : emailStart();
@@ -2114,7 +2117,7 @@ export default function App() {
             </label>
             {challenge && (
               <label>
-                Eight-digit code
+                Verification code
                 <input
                   inputMode="numeric"
                   pattern="[0-9]{8}"
@@ -2128,7 +2131,7 @@ export default function App() {
             )}
             <button className="primary full" disabled={busy}>
               {busy ? <Loader2 className="spin" size={16} /> : null}
-              {challenge ? "Verify email" : "Send sign-in code"}
+              {challenge ? "Verify and continue" : "Send verification code"}
             </button>
             {challenge && (
               <button data-insights="use-a-different-email"
@@ -2139,21 +2142,14 @@ export default function App() {
                 Use a different email
               </button>
             )}
-          </form>
-          <div className="or">or</div>
-          <button data-insights="continue-with-ethereum"
+          </form>} wallet={<button data-insights="continue-with-ethereum"
             className="secondary full"
             disabled={busy}
             onClick={walletSign}
           >
             <Wallet size={18} />
-            Continue with Ethereum
-          </button>
-          <p className="fine">
-            Wallet sign-in verifies ownership. It does not authorize a
-            transaction.
-          </p>
-          {authStep && (
+            Sign in with Ethereum
+          </button>} notice={<>          {authStep && (
             <p role="status" className="fine">
               {authStep.replaceAll("-", " ")}
             </p>
@@ -2163,6 +2159,8 @@ export default function App() {
               {error}
             </p>
           )}
+</>}
+          />
         </Dialog>
       )}
       {modal === "recovery" && recovery && (
