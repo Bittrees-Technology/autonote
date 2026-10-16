@@ -1,4 +1,7 @@
 "use client";
+
+import {startVisiblePolling} from "../../lib/visible-polling.mjs";
+import {workspacePollInterval} from "../../lib/workspace-polling";
 import {SharedProfileCard} from "../../shared/sso/SharedProfileCard.jsx";
 import {useSharedSignIn} from "../../shared/sso/useSharedSignIn.jsx";
 import { LoginPanel, EmailSignIn, EthereumSignIn } from "../shared/login/LoginPanel.jsx";
@@ -308,16 +311,12 @@ useSharedSignIn(user?.id);
         .catch(() => {});
     else setDeviceFiles([]);
   }, [user?.id, demo, selected]);
+  const pollInterval = workspacePollInterval(processingMode, meetings);
   useEffect(() => {
     if (!user || demo) return;
-    const timer = setInterval(
-      () => {
-        if (document.visibilityState === "visible") refresh().catch(() => {});
-      },
-      processingMode === "device" ? 60000 : 5000,
-    );
-    return () => clearInterval(timer);
-  }, [user, workspace, demo, processingMode]);
+    return startVisiblePolling(() => refresh(), { intervalMs: pollInterval, immediate: false });
+  }, [user?.id, workspace, demo, pollInterval]);
+
   useEffect(() => {
     if (!recording || paused) return;
     const timer = setInterval(() => setElapsed((v) => v + 1), 1000);
