@@ -2,6 +2,7 @@
 
 import {startVisiblePolling} from "../../lib/visible-polling.mjs";
 import {workspacePollInterval} from "../../lib/workspace-polling";
+import {CalendarMeetingCard} from "../../components/calendar-meeting";
 import {SharedProfileCard} from "../../shared/sso/SharedProfileCard.jsx";
 import {useSharedSignIn} from "../../shared/sso/useSharedSignIn.jsx";
 import { LoginPanel, EmailSignIn, EthereumSignIn } from "../shared/login/LoginPanel.jsx";
@@ -1071,7 +1072,7 @@ useSharedSignIn(user?.id);
               )}
             </div>
           </aside>
-          <main><SharedProfileCard sessionRevision={user?.id}/>
+          <main><SharedProfileCard sessionRevision={user?.id}/><CalendarMeetingCard userId={user?.id} meetingId={selected} onRecord={(meetingTitle)=>{setTitle(meetingTitle);setConsent(false);setModal("record");}}/>
             <div className="topbar">
               <span>
                 <span className="status-dot" />{" "}
