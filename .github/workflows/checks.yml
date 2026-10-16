@@ -36,6 +36,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npx playwright install --with-deps chromium
+      - name: Workspace idle and live-job polling browser acceptance
+        run: node scripts/workspace-polling-check.mjs
       - name: Private AI consent browser acceptance
         run: npx tsx --env-file=.env.test scripts/ai-consent-check.ts
       - uses: actions/upload-artifact@v4
