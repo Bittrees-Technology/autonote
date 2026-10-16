@@ -1,0 +1,35 @@
+{
+  "schema": "bittrees.app-tools.v1",
+  "version": 1,
+  "projectId": "autonote",
+  "canonicalDiscovery": "https://mcp.bittrees.org/mcp",
+  "connections": [
+    {
+      "projectId": "autonote",
+      "transport": "local-mcp-adapter",
+      "endpoint": "https://autonote.bittrees.org/api/integrations/ai",
+      "verification": "adapter-tested-source-inspected",
+      "source": "https://github.com/Bittrees-Technology/autonote/blob/562193c4be67e691d472a610b6df3851e96caeba/app/api/integrations/ai/[action]/route.ts",
+      "operations": {
+        "read": [
+          "autonote.read_transcript",
+          "autonote.review_status",
+          "autonote.review_receipt"
+        ]
+      },
+      "boundary": "Existing meeting-bound AutoNote AI grant only. Review status is not approval; receipts do not publish. No transcript access beyond the grant.",
+      "setup": {
+        "command": "node",
+        "args": [
+          "integrations/app-api-mcp.mjs"
+        ],
+        "environmentNames": [
+          "BITTREES_APP",
+          "BITTREES_APP_TOKEN"
+        ],
+        "app": "autonote",
+        "credential": "Use an existing app-scoped credential through secret storage; never send credentials as tool arguments."
+      }
+    }
+  ]
+}
