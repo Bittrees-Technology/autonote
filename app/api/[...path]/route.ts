@@ -13,6 +13,7 @@ import {
   checkOrigin,
   cookie,
   cookieName,
+  authenticationCookieName,
   hash,
   setCookie,
   rateLimit,
@@ -98,7 +99,9 @@ async function handle(
         })
         .parse(data);
       const r = await startChallenge(req, d);
-      return json(r.body, r.cookie);
+      const response=json(r.body,r.cookie);
+      if('authenticationCookie' in r&&typeof r.authenticationCookie==='string')response.headers.append('Set-Cookie',r.authenticationCookie);
+      return response;
     }
     if (path.join("/") === "auth/verify" && method === "POST") {
       const r = await verifyChallenge(
@@ -111,20 +114,25 @@ async function handle(
           })
           .parse(data),
       );
-      return json(r.body, r.cookie);
+      const response=json(r.body,r.cookie);
+      if('authenticationCookie' in r&&typeof r.authenticationCookie==='string')response.headers.append('Set-Cookie',r.authenticationCookie);
+      return response;
     }
     if (path.join("/") === "auth/recover" && method === "POST") {
       const r = await completeRecovery(
         req,
         z.string().length(64).parse(data.token),
       );
-      return json(r.body, r.cookie);
+      const response=json(r.body,r.cookie);
+      if('authenticationCookie' in r&&typeof r.authenticationCookie==='string')response.headers.append('Set-Cookie',r.authenticationCookie);
+      return response;
     }
     if (path.join("/") === "auth/logout" && method === "POST") {
       await pool().query("DELETE FROM sessions WHERE hash=$1", [
         hash(cookie(req, cookieName)),
       ]);
       const response=json({ok:true},setCookie(cookieName,"",0));
+      response.headers.append("Set-Cookie",setCookie(authenticationCookieName,"",0));
       const sharedOrigin=process.env.APP_URL||new URL(req.url).origin;
       response.headers.append('Set-Cookie',sharedCookie('bt-sso-skip','1',604800,sharedOrigin));
       response.headers.append('Set-Cookie',sharedCookie('bt-sso-published','',0,sharedOrigin));
