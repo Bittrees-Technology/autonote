@@ -1,4 +1,5 @@
 import { aiSchema } from "./ai-schema";
+import { nativeWorkflowSchema } from "./native-workflow-schema";
 import { Pool, type PoolClient } from "pg";
 const globalDb = globalThis as unknown as { autonotePool?: Pool };
 export function pool() {
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS challenges(id uuid PRIMARY KEY,kind text NOT NULL,val
 CREATE TABLE IF NOT EXISTS rate_limits(key text PRIMARY KEY,hits int NOT NULL,resets_at timestamptz NOT NULL);
 CREATE TABLE IF NOT EXISTS workspaces(id uuid PRIMARY KEY,name text NOT NULL,retention_days int NOT NULL DEFAULT 30 CHECK(retention_days BETWEEN 1 AND 365),monthly_minutes int NOT NULL DEFAULT 600 CHECK(monthly_minutes>0),created_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS members(workspace_id uuid REFERENCES workspaces(id),user_id uuid REFERENCES users(id),role text NOT NULL CHECK(role IN ('owner','editor','viewer')),PRIMARY KEY(workspace_id,user_id));
+${nativeWorkflowSchema}
 CREATE TABLE IF NOT EXISTS meetings(id uuid PRIMARY KEY,workspace_id uuid NOT NULL REFERENCES workspaces(id),creator_id uuid NOT NULL REFERENCES users(id),title text NOT NULL,language text NOT NULL DEFAULT 'en',visibility text NOT NULL DEFAULT 'private' CHECK(visibility IN ('private','workspace')),status text NOT NULL DEFAULT 'uploading',duration float,version int NOT NULL DEFAULT 1,transcript jsonb NOT NULL DEFAULT '[]',notes jsonb,notes_stale boolean NOT NULL DEFAULT false,error text,object_key text,upload_id text,upload_bytes bigint NOT NULL DEFAULT 0,recording_deleted boolean NOT NULL DEFAULT false,consent_at timestamptz NOT NULL DEFAULT now(),created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),deleted_at timestamptz);
 CREATE INDEX IF NOT EXISTS meetings_workspace ON meetings(workspace_id,created_at DESC);
 CREATE TABLE IF NOT EXISTS meeting_grants(meeting_id uuid REFERENCES meetings(id) ON DELETE CASCADE,user_id uuid REFERENCES users(id),PRIMARY KEY(meeting_id,user_id));

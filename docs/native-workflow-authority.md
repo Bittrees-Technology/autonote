@@ -1,0 +1,23 @@
+# Native workspace role verification
+
+`POST https://autonote.bittrees.org/api/roles/workflow-authority` accepts only the frozen, domain-separated Ed25519 Roles envelope. The envelope embeds the exact Workflow identity, action, selected scope, parameters digest, operation ID and request ID. Both request and result expire within five seconds; results expire no later than the original request. Existing Roles decision verification and AutoNote ecosystem signing keys are reused. No new credentials or source actions are introduced.
+
+Each accepted request atomically claims and commits its request ID in a dedicated namespace of the existing `rate_limits` store, then queries the exact current verified email or Ethereum identity, unmerged account and native workspace membership. Linked-wallet assumptions, central project roles and cached feed labels never qualify. A verified email qualifies only through that exact native email account and never implies wallet proof. Downstream failures cannot roll back the committed replay claim. Database/configuration failure denies eligibility. More than 100 memberships fails closed. Non-list operations return only the exact currently selected scope.
+
+Only opaque resource/membership references, workspace role and a restrictions digest are returned. The digest is SHA-256 of canonical `null`: workspace membership itself has no record restriction field. Meeting ownership, private visibility and meeting grants remain separate and confer no actions through this endpoint. No private names, native account/workspace IDs, member lists, meeting data or linked identities are returned.
+
+## Migration and scope lifetime
+
+`lib/native-workflow-schema.ts` adds `members.authority_generation`, `identities.authority_generation`, and schema-qualified triggers. Each new membership and each change of user, workspace or role receives a fresh database-generated UUID. Each new or reverified/reassigned identity also receives a new generation. A no-op retains the old generation, including attempts to overwrite it directly. This covers invitation acceptance, account recovery/upsert, owner changes and deletion/recreation without relying on callers to update epochs.
+
+The opaque membership reference includes the authenticated identity, native account, current identity and membership generations, and sorted current owners' account/generation pairs under the existing subject HMAC secret. An ownership transfer therefore invalidates scopes for all workspace members, including a transfer back to the same owner. Raw owners and generations never leave AutoNote. The query uses one database snapshot; no authorization row locks or new cross-table lock ordering are added. Existing native locks and last-owner protections are preserved. Responses are short-lived observations and must be requested again for every operation.
+
+Run `scripts/migrate-native-workflow.ts` with the existing direct `DATABASE_URL_UNPOOLED` connection and explicit `NATIVE_WORKFLOW_MIGRATION_APPROVED=autonote` release assertion. It applies only this versioned additive migration in a bounded transaction and verifies both UUID columns and enabled triggers before committing. The migration is repeatable, backfills existing rows, and needs no new extensions/resources. A missing migration causes the endpoint to fail closed. Existing scheduled maintenance removes expired replay rows after one day; no new schedule is created.
+
+Vercel's existing direct credential is non-exportable. `scripts/build.mjs` therefore runs this bounded migration inside the production deployment, using the protected injected credential. It emits only the committed migration receipt and stops a release on failure. Local, CI and preview builds skip migration entirely. No connection or signing key is exported or copied to release files.
+
+## Validation
+
+`tests/native-workflow-authority.test.ts` exercises real local Postgres signature binding, exact selection, privacy, concurrent/sequential replay, revoke/recreate, role changes, ownership transfer/back, merge/reassignment, absent identity, exact email role eligibility without wallet elevation, identity revocation/reproof, overflow, outages, no-op/rollback, repeat migration and populated legacy backfill. Existing native account, sharing, invitation, recovery and last-owner regression tests remain required.
+
+This endpoint supplies eligibility only. It does not enable personal workflows, approve a policy, activate Safe authority, grant AutoNote operations or authorize access to private content. Roles must separately validate its explicitly approved `nativeRoleProjects` policy.
