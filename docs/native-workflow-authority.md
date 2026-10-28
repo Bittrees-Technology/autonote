@@ -14,6 +14,8 @@ The opaque membership reference includes the authenticated identity, native acco
 
 Run `scripts/migrate-native-workflow.ts` with the existing direct `DATABASE_URL_UNPOOLED` connection and explicit `NATIVE_WORKFLOW_MIGRATION_APPROVED=autonote` release assertion. It applies only this versioned additive migration in a bounded transaction and verifies both UUID columns and enabled triggers before committing. The migration is repeatable, backfills existing rows, and needs no new extensions/resources. A missing migration causes the endpoint to fail closed. Existing scheduled maintenance removes expired replay rows after one day; no new schedule is created.
 
+Vercel's existing direct credential is non-exportable. `scripts/build.mjs` therefore runs this bounded migration inside the production deployment, using the protected injected credential. It emits only the committed migration receipt and stops a release on failure. Local, CI and preview builds skip migration entirely. No connection or signing key is exported or copied to release files.
+
 ## Validation
 
 `tests/native-workflow-authority.test.ts` exercises real local Postgres signature binding, exact selection, privacy, concurrent/sequential replay, revoke/recreate, role changes, ownership transfer/back, merge/reassignment, absent identity, exact email role eligibility without wallet elevation, identity revocation/reproof, overflow, outages, no-op/rollback, repeat migration and populated legacy backfill. Existing native account, sharing, invitation, recovery and last-owner regression tests remain required.
