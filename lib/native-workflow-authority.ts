@@ -1,5 +1,6 @@
 import { createHash, createHmac, createPrivateKey, sign } from "node:crypto";
 import { transaction } from "./db";
+import { nativeWorkflowSchemaReady } from "./native-workflow-schema";
 import { canonical } from "../shared/signed-action.mjs";
 import { PERSONAL_WORKFLOW_ENDPOINT } from "../shared/personal-workflow-authority.mjs";
 import {
@@ -115,6 +116,8 @@ export async function nativeWorkflowAuthority(req: Request) {
     const rows = await transaction(async (db) => {
       await db.query("SET LOCAL statement_timeout='1500ms'");
       await db.query("SET LOCAL lock_timeout='1000ms'");
+      if (!(await nativeWorkflowSchemaReady(db)))
+        throw Error("Authority generations unavailable");
       return (
         await db.query(membershipQuery, [
           request.workflowRequest.identity.kind === "wallet"
