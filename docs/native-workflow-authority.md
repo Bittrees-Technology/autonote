@@ -4,6 +4,8 @@
 
 Each accepted request atomically claims and commits its request ID in a dedicated namespace of the existing `rate_limits` store, then queries the exact current verified email or Ethereum identity, unmerged account and native workspace membership. Linked-wallet assumptions, central project roles and cached feed labels never qualify. A verified email qualifies only through that exact native email account and never implies wallet proof. Downstream failures cannot roll back the committed replay claim. Database/configuration failure denies eligibility. More than 100 memberships fails closed. Non-list operations return only the exact currently selected scope.
 
+A confirmed duplicate in the durable nonce store returns HTTP 409. Invalid, forged or expired requests return 403; configuration, schema and database outages return 503. Replaying a consumed valid request after a downstream outage still returns 409. Error bodies remain bounded and generic, with private/no-store and noindex headers.
+
 Only opaque resource/membership references, workspace role and a restrictions digest are returned. The digest is SHA-256 of canonical `null`: workspace membership itself has no record restriction field. Meeting ownership, private visibility and meeting grants remain separate and confer no actions through this endpoint. No private names, native account/workspace IDs, member lists, meeting data or linked identities are returned.
 
 ## Migration and scope lifetime

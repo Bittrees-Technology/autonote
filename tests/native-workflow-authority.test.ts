@@ -212,12 +212,26 @@ test("anonymous, tampered, expired, wrong project/audience/host, oversized and e
 test("durable replay claim denies sequential and concurrent replay", async () => {
   const p = packet();
   assert.equal((await send(p)).status, 200);
-  assert.equal((await send(p)).status, 503);
+  const replay = await send(p);
+  assert.equal(replay.status, 409);
+  assert.equal(replay.headers.get("cache-control"), "private, no-store");
+  assert.equal(replay.headers.get("x-robots-tag"), "noindex, nofollow");
+  assert.deepEqual(await replay.json(), {
+    error: "Native workflow verification unavailable.",
+  });
   const concurrent = packet();
   const statuses = await Promise.all(
     [send(concurrent), send(concurrent)].map(async (r) => (await r).status),
   );
-  assert.deepEqual(statuses.sort(), [200, 503]);
+  assert.deepEqual(statuses.sort(), [200, 409]);
+  const forged = { ...p, signature: "invalid" };
+  assert.equal((await send(forged)).status, 403);
+  const expired = packet("list", null, {
+    requestId: p.request.requestId,
+    issuedAt: Date.now() - 6000,
+    expiresAt: Date.now() - 1000,
+  });
+  assert.equal((await send(expired)).status, 403);
 });
 test("role changes and revoke/recreate never revive an old scope", async () => {
   const old = (await decision()).scopes[0];
@@ -409,6 +423,8 @@ test("missing configuration or database authority never returns eligibility", as
   await pool().query(`ALTER TABLE members RENAME TO temporarily_unavailable`);
   try {
     assert.equal((await send(failed)).status, 503);
+    // The known committed nonce is distinct from the still-unavailable source.
+    assert.equal((await send(failed)).status, 409);
   } finally {
     await pool().query("ALTER TABLE temporarily_unavailable RENAME TO members");
   }
@@ -420,7 +436,7 @@ test("missing configuration or database authority never returns eligibility", as
       .rows[0].hits,
     1,
   );
-  assert.equal((await send(failed)).status, 503);
+  assert.equal((await send(failed)).status, 409);
 });
 test("migration backfills distinct generations on populated legacy memberships", async () => {
   const { Client } = await import("pg");
