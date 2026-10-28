@@ -20,6 +20,9 @@ const error = (status: number) =>
     { error: "Native workflow verification unavailable." },
     { status, headers },
   );
+// Only a confirmed conflict in the durable nonce store is a replay. Database,
+// configuration and downstream authority failures remain unavailable (503).
+class ReplayConflict extends Error {}
 const restrictionsDigest = createHash("sha256")
   .update(canonical(null))
   .digest("hex");
@@ -108,7 +111,8 @@ export async function nativeWorkflowAuthority(req: Request) {
           new Date(request.expiresAt),
         ],
       );
-      if (claimed.rowCount !== 1) throw Error("Replay");
+      if (claimed.rowCount === 0) throw new ReplayConflict();
+      if (claimed.rowCount !== 1) throw Error("Replay claim unavailable");
     });
     // The replay claim is already committed and survives downstream errors.
     // Resolve only the exact attested native identity. Verified email membership
@@ -205,7 +209,7 @@ export async function nativeWorkflowAuthority(req: Request) {
     // contract. No result is usable after the signed request's original expiry.
     verifyNativeWorkflowDecision(envelope, request, key);
     return Response.json(envelope, { headers });
-  } catch {
-    return error(503);
+  } catch (caught) {
+    return error(caught instanceof ReplayConflict ? 409 : 503);
   }
 }
