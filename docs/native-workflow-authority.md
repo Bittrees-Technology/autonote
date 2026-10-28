@@ -14,7 +14,7 @@ The opaque membership reference includes the authenticated identity, native acco
 
 Run `scripts/migrate-native-workflow.ts` with the existing direct `DATABASE_URL_UNPOOLED` connection and explicit `NATIVE_WORKFLOW_MIGRATION_APPROVED=autonote` release assertion. It applies only this versioned additive migration in a bounded transaction and verifies both UUID columns and enabled triggers before committing. The migration is repeatable, backfills existing rows, and needs no new extensions/resources. A missing migration causes the endpoint to fail closed. Existing scheduled maintenance removes expired replay rows after one day; no new schedule is created.
 
-Vercel's existing direct credential is non-exportable. `scripts/build.mjs` therefore runs this bounded migration inside the production deployment, using the protected injected credential. It emits only the committed migration receipt and stops a release on failure. Local, CI and preview builds skip migration entirely. No connection or signing key is exported or copied to release files.
+Apply the migration using the existing operator schema-owner context; never expand the application's database role. `scripts/build.mjs` uses the existing protected direct application connection only for `NATIVE_WORKFLOW_VERIFY_ONLY=1` readiness in a database-enforced READ ONLY transaction. A production build stops if the exact UUID defaults, trigger events, invoker/search-path settings or persisted function bodies do not match the reviewed migration. Local, CI and preview builds skip this production check. Every native eligibility operation also rechecks the same schema readiness before reading membership. No privileged connection or signing key is added to application/Vercel configuration.
 
 ## Validation
 

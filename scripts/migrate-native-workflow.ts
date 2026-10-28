@@ -1,5 +1,8 @@
 import { Client } from "pg";
-import { nativeWorkflowSchema } from "../lib/native-workflow-schema";
+import {
+  nativeWorkflowSchema,
+  nativeWorkflowSchemaReady,
+} from "../lib/native-workflow-schema";
 
 // A release operator supplies only AutoNote's existing direct connection in
 // memory. No application signing keys are needed for this bounded migration.
@@ -25,10 +28,18 @@ if (
 const client = new Client({ connectionString, connectionTimeoutMillis: 10000 });
 await client.connect();
 try {
-  await client.query("BEGIN");
+  const verifyOnly = process.env.NATIVE_WORKFLOW_VERIFY_ONLY === "1";
+  await client.query(verifyOnly ? "BEGIN READ ONLY" : "BEGIN");
   await client.query("SET LOCAL lock_timeout='3s'");
   await client.query("SET LOCAL statement_timeout='10s'");
-  await client.query(nativeWorkflowSchema);
+  const alreadyCurrent = await nativeWorkflowSchemaReady(client);
+  if (!alreadyCurrent) {
+    if (verifyOnly)
+      throw Error(
+        "Native workflow generation migration requires the existing schema owner.",
+      );
+    await client.query(nativeWorkflowSchema);
+  }
   const columns = await client.query(
     "SELECT table_name,column_name,data_type,is_nullable FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN ('members','identities') AND column_name='authority_generation'",
   );
@@ -44,17 +55,21 @@ try {
     triggers.rows.some((t) => t.tgenabled !== "O")
   )
     throw Error("Migration verification failed.");
-  const transactionId = (
-    await client.query("SELECT txid_current()::text AS id")
-  ).rows[0].id;
+  if (!(await nativeWorkflowSchemaReady(client)))
+    throw Error("Generation trigger verification failed.");
+  const transactionId = alreadyCurrent
+    ? null
+    : (await client.query("SELECT txid_current()::text AS id")).rows[0].id;
   await client.query("COMMIT");
   console.log(
     JSON.stringify({
       migration: "autonote-native-workflow-v1",
-      status: "committed",
+      status: alreadyCurrent ? "verified-existing" : "committed",
       transactionId,
       verifiedColumns: 2,
       enabledTriggers: 2,
+      verifiedFunctions: 2,
+      verifyOnly,
     }),
   );
 } catch (e) {

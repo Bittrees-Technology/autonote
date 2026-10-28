@@ -5,11 +5,13 @@ function run(args, env = process.env) {
   if (result.error || result.status !== 0) process.exit(result.status || 1);
 }
 // The existing direct database credential stays inside Vercel. Preview/local/CI
-// builds never migrate production; a failed production migration stops release.
+// builds never touch production; production verifies readiness in a READ ONLY
+// transaction. Only the existing operator schema owner may apply migrations.
 if (process.env.VERCEL === "1" && process.env.VERCEL_ENV === "production") {
   run(["--import", "tsx", "scripts/migrate-native-workflow.ts"], {
     ...process.env,
     NATIVE_WORKFLOW_MIGRATION_APPROVED: "autonote",
+    NATIVE_WORKFLOW_VERIFY_ONLY: "1",
   });
 }
 run(["node_modules/next/dist/bin/next", "build", ...process.argv.slice(2)]);

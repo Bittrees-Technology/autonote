@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
-test("real build wrapper skips migration outside production and stops release on migration failure", () => {
+test("real build wrapper skips migration outside production and stops release on readiness failure", () => {
   const dir = mkdtempSync(join(tmpdir(), "autonote-build-guard-"));
   try {
     mkdirSync(join(dir, "scripts"));
@@ -26,7 +26,7 @@ test("real build wrapper skips migration outside production and stops release on
     writeFileSync(join(dir, "node_modules/tsx/index.mjs"), "");
     writeFileSync(
       join(dir, "scripts/migrate-native-workflow.ts"),
-      `import{writeFileSync}from'node:fs';writeFileSync('migration.json',JSON.stringify({approved:process.env.NATIVE_WORKFLOW_MIGRATION_APPROVED}));process.exit(Number(process.env.FIXTURE_MIGRATION_EXIT||0));`,
+      `import{writeFileSync}from'node:fs';writeFileSync('migration.json',JSON.stringify({approved:process.env.NATIVE_WORKFLOW_MIGRATION_APPROVED,verifyOnly:process.env.NATIVE_WORKFLOW_VERIFY_ONLY}));process.exit(Number(process.env.FIXTURE_MIGRATION_EXIT||0));`,
     );
     writeFileSync(
       join(dir, "node_modules/next/dist/bin/next"),
@@ -64,7 +64,7 @@ test("real build wrapper skips migration outside production and stops release on
     assert.equal(good.status, 0, good.stderr);
     assert.deepEqual(
       JSON.parse(readFileSync(join(dir, "migration.json"), "utf8")),
-      { approved: "autonote" },
+      { approved: "autonote", verifyOnly: "1" },
     );
     assert.equal(existsSync(join(dir, "build.json")), true);
     rmSync(join(dir, "build.json"));

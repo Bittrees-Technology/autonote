@@ -2,7 +2,10 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash, generateKeyPairSync, randomUUID, sign } from "node:crypto";
 import { pool, schema, transaction } from "../lib/db";
-import { nativeWorkflowSchema } from "../lib/native-workflow-schema";
+import {
+  nativeWorkflowSchema,
+  nativeWorkflowSchemaReady,
+} from "../lib/native-workflow-schema";
 import { POST } from "../app/api/roles/workflow-authority/route";
 import { canonical } from "../shared/signed-action.mjs";
 import {
@@ -476,4 +479,38 @@ test("migration backfills distinct generations on populated legacy memberships",
     await client.query("ROLLBACK");
     await client.end();
   }
+});
+test("read-only readiness and live eligibility reject disabled or replaced generation triggers", async () => {
+  const client = await pool().connect();
+  try {
+    await client.query("BEGIN READ ONLY");
+    assert.equal(await nativeWorkflowSchemaReady(client), true);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+  await pool().query(
+    "ALTER TABLE members DISABLE TRIGGER autonote_membership_generation",
+  );
+  try {
+    assert.equal(await nativeWorkflowSchemaReady(pool()), false);
+    assert.equal((await send()).status, 503);
+  } finally {
+    await pool().query(
+      "ALTER TABLE members ENABLE TRIGGER autonote_membership_generation",
+    );
+  }
+  await pool().query(
+    `CREATE OR REPLACE FUNCTION ${isolated}.autonote_identity_generation() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS 'BEGIN RETURN NEW; END;'`,
+  );
+  try {
+    assert.equal(await nativeWorkflowSchemaReady(pool()), false);
+    assert.equal((await send()).status, 503);
+  } finally {
+    await pool().query(nativeWorkflowSchema);
+  }
+  assert.equal(await nativeWorkflowSchemaReady(pool()), true);
 });
