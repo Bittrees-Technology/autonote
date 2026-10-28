@@ -5,7 +5,9 @@ node_modules
 workers
 compose.yaml
 tests
-scripts
+scripts/*
+!scripts/build.mjs
+!scripts/migrate-native-workflow.ts
 docs
 *.wav
 *.mp3

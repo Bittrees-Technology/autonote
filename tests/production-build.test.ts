@@ -75,3 +75,26 @@ test("real build wrapper skips migration outside production and stops release on
     rmSync(dir, { recursive: true, force: true });
   }
 });
+test("migration configuration failures do not print credential inputs", () => {
+  const secret = "invalid connection synthetic-private-password";
+  const result = spawnSync(
+    process.execPath,
+    ["--import", "tsx", "scripts/migrate-native-workflow.ts"],
+    {
+      cwd: fileURLToPath(new URL("../", import.meta.url)),
+      env: {
+        ...process.env,
+        DATABASE_URL_UNPOOLED: secret,
+        NATIVE_WORKFLOW_MIGRATION_APPROVED: "autonote",
+      },
+      encoding: "utf8",
+      timeout: 5000,
+    },
+  );
+  assert.equal(result.status, 1);
+  assert.equal((result.stdout + result.stderr).includes(secret), false);
+  assert.match(
+    result.stderr,
+    /Explicit AutoNote release approval and direct connection required/,
+  );
+});

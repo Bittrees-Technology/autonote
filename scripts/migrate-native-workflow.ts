@@ -4,10 +4,19 @@ import { nativeWorkflowSchema } from "../lib/native-workflow-schema";
 // A release operator supplies only AutoNote's existing direct connection in
 // memory. No application signing keys are needed for this bounded migration.
 const connectionString = process.env.DATABASE_URL_UNPOOLED;
+let directConnection = false;
+try {
+  const url = new URL(connectionString || "");
+  directConnection =
+    ["postgres:", "postgresql:"].includes(url.protocol) &&
+    !url.hostname.includes("-pooler");
+} catch {
+  // URL parsing errors can include their input; never log the credential.
+}
 if (
   process.env.NATIVE_WORKFLOW_MIGRATION_APPROVED !== "autonote" ||
   !connectionString ||
-  new URL(connectionString).hostname.includes("-pooler")
+  !directConnection
 ) {
   throw Error(
     "Explicit AutoNote release approval and direct connection required.",
