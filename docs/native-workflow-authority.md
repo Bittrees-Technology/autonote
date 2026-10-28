@@ -12,7 +12,7 @@ Only opaque resource/membership references, workspace role and a restrictions di
 
 The opaque membership reference includes the authenticated identity, native account, current identity and membership generations, and sorted current owners' account/generation pairs under the existing subject HMAC secret. An ownership transfer therefore invalidates scopes for all workspace members, including a transfer back to the same owner. Raw owners and generations never leave AutoNote. The query uses one database snapshot; no authorization row locks or new cross-table lock ordering are added. Existing native locks and last-owner protections are preserved. Responses are short-lived observations and must be requested again for every operation.
 
-Run the existing versioned migration entry point against the direct database connection, or apply this exact additive migration in a bounded transaction through the reviewed release procedure. The migration is repeatable, backfills existing rows, and needs no new extensions/resources. A missing migration causes the endpoint to fail closed. Existing scheduled maintenance removes expired replay rows after one day; no new schedule is created.
+Run `scripts/migrate-native-workflow.ts` with the existing direct `DATABASE_URL_UNPOOLED` connection and explicit `NATIVE_WORKFLOW_MIGRATION_APPROVED=autonote` release assertion. It applies only this versioned additive migration in a bounded transaction and verifies both UUID columns and enabled triggers before committing. The migration is repeatable, backfills existing rows, and needs no new extensions/resources. A missing migration causes the endpoint to fail closed. Existing scheduled maintenance removes expired replay rows after one day; no new schedule is created.
 
 ## Validation
 
