@@ -159,7 +159,7 @@ export default function App() {
     [elapsed, setElapsed] = useState(0),
     [savedRecording, setSavedRecording] = useState(false),
     [recoverable, setRecoverable] = useState(false);
-useSharedSignIn(user?.id);
+useSharedSignIn(user?.id, loaded);
   const [captureMode, setCaptureMode] = useState<"microphone" | "meeting">(
     "microphone",
   );
