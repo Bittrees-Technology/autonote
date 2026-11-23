@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "installCommand": "npm ci",
+  "installCommand": "ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci",
   "regions": [
     "fra1"
   ],
